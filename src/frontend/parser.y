@@ -185,6 +185,8 @@ Expr        : ICONST
                 { $$ = new ast::IfExpr($1,$3,$5,POS(@2)); }
             | MINUS Expr  %prec NEG
                 { $$ = new ast::NegExpr($2, POS(@1)); }
+            | LNOT Expr  %prec LNOT
+                { $$ = new ast::NotExpr($2, POS(@1)); }
             ;
 
 %%

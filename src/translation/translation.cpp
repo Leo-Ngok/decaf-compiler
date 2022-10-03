@@ -179,6 +179,14 @@ void Translation::visit(ast::NegExpr *e) {
     e->ATTR(val) = tr->genNeg(e->e->ATTR(val));
 }
 
+/* Translating an ast::NegExpr node.
+ */
+void Translation::visit(ast::NotExpr *e) {
+    e->e->accept(this);
+
+    e->ATTR(val) = tr->genLNot(e->e->ATTR(val));
+}
+
 /* Translating an ast::LvalueExpr node.
  *
  * NOTE:

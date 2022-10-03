@@ -223,7 +223,9 @@ void RiscvDesc::emitTac(Tac *t) {
     case Tac::NEG:
         emitUnaryTac(RiscvInstr::NEG, t);
         break;
-    
+    case Tac::LNOT:
+        emitUnaryTac(RiscvInstr::LNOT, t);
+        break;
     case Tac::ADD:
         emitBinaryTac(RiscvInstr::ADD, t);
         break;
@@ -457,7 +459,9 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::NEG:
         oss << "neg" << i->r0->name << ", " << i->r1->name;
         break;
-
+    case RiscvInstr::LNOT:
+        oss << "seqz" << i->r0->name << ", " << i->r1->name;
+        break;
     case RiscvInstr::MOVE:
         oss << "mv" << i->r0->name << ", " << i->r1->name;
         break;
