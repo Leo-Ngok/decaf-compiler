@@ -32,9 +32,14 @@ class SemPass2 : public ast::Visitor {
     // Visiting expressions
     virtual void visit(ast::AssignExpr *);
     virtual void visit(ast::AddExpr *);
+    virtual void visit(ast::SubExpr *);
+    virtual void visit(ast::MulExpr *);
+    virtual void visit(ast::DivExpr *);
+    virtual void visit(ast::ModExpr *);
     virtual void visit(ast::IntConst *);
     virtual void visit(ast::NegExpr *);
     virtual void visit(ast::NotExpr *);
+    virtual void visit(ast::BitNotExpr *);
     virtual void visit(ast::LvalueExpr *);
     virtual void visit(ast::VarRef *);
     // Visiting statements
@@ -100,6 +105,66 @@ void SemPass2::visit(ast::AddExpr *e) {
     e->ATTR(type) = BaseType::Int;
 }
 
+/* Visits an ast::SubExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::SubExpr node
+ */
+void SemPass2::visit(ast::SubExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::MulExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::MulExpr node
+ */
+void SemPass2::visit(ast::MulExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::DivExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::DivExpr node
+ */
+void SemPass2::visit(ast::DivExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::ModExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::ModExpr node
+ */
+void SemPass2::visit(ast::ModExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
 /* Visits an ast::NegExpr node.
  *
  * PARAMETERS:
@@ -118,6 +183,18 @@ void SemPass2::visit(ast::NegExpr *e) {
  *   e     - the ast::NotExpr node
  */
 void SemPass2::visit(ast::NotExpr *e) {
+    e->e->accept(this);
+    expect(e->e, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::BitNotExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::BitNotExpr node
+ */
+void SemPass2::visit(ast::BitNotExpr *e) {
     e->e->accept(this);
     expect(e->e, BaseType::Int);
 

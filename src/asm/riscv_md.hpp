@@ -87,6 +87,7 @@ struct RiscvInstr : public Instr {
         ADD,
         NEG,
         LNOT,
+        BNOT,
         J,
         BEQZ,
         RET,

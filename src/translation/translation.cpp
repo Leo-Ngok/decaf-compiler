@@ -165,6 +165,42 @@ void Translation::visit(ast::AddExpr *e) {
     e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
 }
 
+/* Translating an ast::SubExpr node.
+ *
+void Translation::visit(ast::SubExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::AddExpr node.
+ *
+void Translation::visit(ast::AddExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::AddExpr node.
+ *
+void Translation::visit(ast::AddExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::AddExpr node.
+ *
+void Translation::visit(ast::AddExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
 /* Translating an ast::IntConst node.
  */
 void Translation::visit(ast::IntConst *e) {
@@ -179,12 +215,20 @@ void Translation::visit(ast::NegExpr *e) {
     e->ATTR(val) = tr->genNeg(e->e->ATTR(val));
 }
 
-/* Translating an ast::NegExpr node.
+/* Translating an ast::NotExpr node.
  */
 void Translation::visit(ast::NotExpr *e) {
     e->e->accept(this);
 
     e->ATTR(val) = tr->genLNot(e->e->ATTR(val));
+}
+
+/* Translating an ast::BitNotExpr node.
+ */
+void Translation::visit(ast::BitNotExpr *e) {
+    e->e->accept(this);
+
+    e->ATTR(val) = tr->genBNot(e->e->ATTR(val));
 }
 
 /* Translating an ast::LvalueExpr node.

@@ -181,12 +181,22 @@ Expr        : ICONST
                 { $$ = $2; }
             | Expr PLUS Expr
                 { $$ = new ast::AddExpr($1, $3, POS(@2)); }
+            | Expr MINUS Expr
+                { $$ = new ast::SubExpr($1, $3, POS(@2)); } 
+            | Expr TIMES Expr
+                { $$ = new ast::MulExpr($1, $3, POS(@2)); }  
+            | Expr SLASH Expr
+                { $$ = new ast::DivExpr($1, $3, POS(@2)); } 
+            | Expr MOD Expr
+                { $$ = new ast::ModExpr($1, $3, POS(@2)); }
             | Expr QUESTION Expr COLON Expr
                 { $$ = new ast::IfExpr($1,$3,$5,POS(@2)); }
             | MINUS Expr  %prec NEG
                 { $$ = new ast::NegExpr($2, POS(@1)); }
-            | LNOT Expr  %prec LNOT
+            | LNOT Expr
                 { $$ = new ast::NotExpr($2, POS(@1)); }
+            | BNOT Expr
+                { $$ = new ast::BitNotExpr($2, POS(@1)); }
             ;
 
 %%
