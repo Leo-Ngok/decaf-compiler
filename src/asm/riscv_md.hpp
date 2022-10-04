@@ -85,6 +85,23 @@ struct RiscvInstr : public Instr {
         COMMENT,
         // instructions/pseudo instructions
         ADD,
+        MINUS,
+        MUL,
+        DIV,
+        MOD,
+        EQ,
+        NEQ,
+        EQ0,
+        NE0,
+        LT,
+        GT,
+        LEQ,
+        GEQ,
+        LAND,
+        AND,
+        LOR,
+        OR,
+        XORI,
         NEG,
         LNOT,
         BNOT,
@@ -146,10 +163,15 @@ class RiscvDesc : public MachineDesc {
     void emitLoadImm4Tac(tac::Tac *);
     // translates a Unary TAC into assembly instructions
     void emitUnaryTac(RiscvInstr::OpCode, tac::Tac *);
+    // Helper for Binary TAC operators to find registers
+    bool emitBinTacHelper(tac::Tac* t, int& r0, int& r1, int& r2);
     // translates a Binary TAC into assembly instructions
     void emitBinaryTac(RiscvInstr::OpCode, tac::Tac *);
-
+    // translates a Binary TAC that the Reduced Instruction Set Computer has not directly implemented
+    void emitDualBinaryTac(RiscvInstr::OpCode, RiscvInstr::OpCode, tac::Tac *);
     // outputs an instruction
+    // translate logical AND TAC into assembly instructions
+    void emitLAND(tac::Tac *);
     void emit(std::string, const char *, const char *);
     // outputs a function
     void emitFuncty(tac::Functy);
