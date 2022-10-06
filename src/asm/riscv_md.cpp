@@ -365,11 +365,20 @@ void RiscvDesc::emitLAND(Tac * t) {
     int r1 = getRegForRead(t->op1.var, 0, liveness);
     int r2 = getRegForRead(t->op2.var, r1, liveness);
     int r0 = getRegForWrite(t->op0.var, r1, r2, liveness);
+    // Method 1: Use De Morgan rule: A and B == NOT(NOT(A AND B)) == NOT(NOT(A) OR NOT(B))
+    /*
     addInstr(RiscvInstr::LNOT, _reg[r1], _reg[r1], NULL, 0, EMPTY_STR, NULL);
     addInstr(RiscvInstr::LNOT, _reg[r2], _reg[r2], NULL, 0, EMPTY_STR, NULL);
 
     addInstr(RiscvInstr::OR, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
-    addInstr(RiscvInstr::LNOT, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::LNOT, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);*/
+
+    // Method 2: First map the bit (anywhere) to the lowest, and then use logical and
+    addInstr(RiscvInstr::NE0, _reg[r1], _reg[r1], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::NE0, _reg[r2], _reg[r2], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::AND, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
+    // Method 3: treat it as an if-clause, and jump to the corresponding stamtents.
+    // Not implemented here, as this breaks the linked list and create a new chain.
 }
 
 /* Outputs a single instruction line.
@@ -591,7 +600,6 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
         oss << "slt" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
         break;    
     case RiscvInstr::GT:
-    // TODO: implement greater than
         oss << "sgt" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
         break;    
     case RiscvInstr::LEQ:
@@ -613,7 +621,9 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::BEQZ:
         oss << "beqz" << i->r0->name << ", " << i->l;
         break;
-
+    case RiscvInstr::BNEZ:
+        oss << "bnez" << i->r0->name << ", " << i->l;
+        break;
     case RiscvInstr::J:
         oss << "j" << i->l;
         break;
