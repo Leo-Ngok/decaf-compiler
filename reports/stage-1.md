@@ -96,6 +96,8 @@ mind 编译器提供编译选项 `-l #`
 
 下面不区分 step2, step3 和 step4。
 
+实际上，共有六处需要做出更改，下面以（**更改#**） 表示。
+
 ###### 2.3.0. 编译器工作原理
 
 先打开 `compiler.cpp` ，观察其编译指令。
@@ -135,6 +137,8 @@ void MindCompiler::compile(const char *input, std::ostream &result) {
 
 由于在 `frontend/parser.y` 已经定义了终结符，因此只要按定义补全 `frontend/scanner.l` 的单词表即可，例如对加法运算，有
 
+（**更改1**）
+
 ```
 "+"          { return yy::parser::make_PLUS  (loc);       }
 ```
@@ -148,6 +152,8 @@ void MindCompiler::compile(const char *input, std::ostream &result) {
 由于在 `SUBSECTION 2.2` 已经定义了运算符的结合律和优先级，因此大可直接对各个运算符编写其产生式，单目运算符参考 取负运算符，双目运算符参考加法运算符，后面调用的构造函数对应 `ast/ast.hpp` 上对各个运算符的定义。
 
 例如，对于乘法运算符，有产生式 
+
+（**更改2**）
 
 ```
 | Expr TIMES Expr
@@ -184,6 +190,8 @@ void MindCompiler::checkTypes(ast::Program *tree) {
 
 例如，对于减法运算，需要分别检查左、右操作数，实际上是后序遍历：
 
+（**更改3**）
+
 ```c++
 // 1. Define visit method for subtraction.
 class SemPass2 : public ast::Visitor {
@@ -214,7 +222,7 @@ void SemPass2::visit(ast::SubExpr *e) {
 }
 ```
 
-到了这个阶段，执行 `./mind <your_code> -l 2` 就能看到更新定义后的符号表了。
+执行 `./mind <your_code> -l 2` 就能看到更新定义后的符号表了。
 
 ###### 2.3.4. 中间代码生成
 
@@ -237,6 +245,8 @@ Piece *MindCompiler::translate(ast::Program *tree) {
 综上，需要修改 `translation/translation.hpp` 和 `translation/translation.cpp` ，把节点翻译为三地址码。
 
 例如，对于乘法运算，有
+
+（**更改4**）
 
 ```c++
 // 1. Define visit method for multiplication 
@@ -343,6 +353,8 @@ RiscvInstr *RiscvDesc::prepareSingleChain(BasicBlock *b, FlowGraph *g) {
 
 生成过程如下：
 
+（**更改5**）
+
 ```c++
 void RiscvDesc::emitTac(Tac *t) {
     //code skipped
@@ -362,9 +374,9 @@ void RiscvDesc::emitTac(Tac *t) {
 
 在这里，观察到 `emitUnaryTac` 和 `emitBinaryTac` 都生成汇编指令链表节点，对于大部分运算符，模仿上述代码实现即可。
 
-但是，由于 RISC-V 汇编指令与 8086 有一定的差异，因此需要对部分的运算符有特别的处理，例如逻辑或需要分解为一次按位或和一次逻辑非，具体是对最后的 `addInstr` 的调用做出修改。
+但是，由于 RISC-V 汇编指令与 8086 有一定的差异，因此需要对部分的运算符有特别的处理，例如逻辑或需要分解为一次按位或和一次逻辑非，具体是对最后的 `addInstr` 的调用做出修改，添加必要的指令。
 
-
+执行 `./mind <your_code> -l 4` ，查看数据流分析结果。
 
 接着把目光转移到 `emitTrace` 上。
 
@@ -392,6 +404,8 @@ void RiscvDesc::emitTrace(BasicBlock *b, FlowGraph *g) {
 
 打开 `emitInstr` 就能看到打印方法了，这部分仿照加法，实现其他运算符指令的输出即可，例如对于乘法运算，有
 
+（**更改6**）
+
 ```c++
 // TODO
 case RiscvInstr::MUL:
@@ -404,6 +418,8 @@ case RiscvInstr::MUL:
 综上所述，应当修改 `asm/riscv_md.hpp` 和 `asm/riscv_md.cpp` ，而这个部分，把（优化后的）三地址码翻译为 RISC-V 汇编语言。
 
 首先对于 `RiscvInstr::OpCode` ，扩展汇编指令枚举，接着按上述的标了 `TODO` 的部分，补全实现即可。
+
+执行 `./mind <your_code> -l 5` ，查看最终的汇编生成结果。
 
 #### 三、附录
 
@@ -419,7 +435,7 @@ case RiscvInstr::MUL:
 | ` op1 / op2`  | `div   t2, t0, t1` |
 | ` op1 % op2`  | `rem   t2, t0, t1` |
 | ` op1 == op2` | `sub   t2, t0, t1` <br/>`seqz  t2, t2` |
-| ` op1 != op2` | `add   t2, t0, t1` <br/>`snez  t2, t2` |
+| ` op1 != op2` | `sub   t2, t0, t1` <br/>`snez  t2, t2` |
 | ` op1 < op2`  | `slt   t2, t0, t1` |
 | ` op1 > op2`  | `sgt   t2, t0, t1` |
 | ` op1 <= op2` | `sgt   t2, t0, t1` <br/>`xori  t2, t2, 1` |
@@ -432,7 +448,7 @@ case RiscvInstr::MUL:
 
 ##### 3.2. 讨论
 
-对于逻辑与，至少有三个实现方式：
+对于逻辑与，至少有三种实现方式：
 
 1. 迪摩根定律；
 
