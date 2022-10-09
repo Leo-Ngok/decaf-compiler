@@ -34,6 +34,19 @@ int main() {
 
 ```
 
+运行结果：
+WSL2-Ubuntu_20.04/GCC
+
+```
+Floating point exception
+```
+
+qemu-RISC-V 32 bit (RISCV64-unknown-elf-gcc)
+
+```
+-2147483648
+```
+
 ##### step 4:
 
 短路求值：
@@ -427,24 +440,24 @@ case RiscvInstr::MUL:
 
 涉及到的 RISC-V 汇编指令如下：
 
-| 运算          | 汇编指令           |
-| ------------- | ------------------ |
-| ` op1 + op2`  | `add   t2, t0, t1` |
-| `op1 - op2`   | `sub   t2, t0, t1` |
-| ` op1 * op2`  | `mul   t2, t0, t1` |
-| ` op1 / op2`  | `div   t2, t0, t1` |
-| ` op1 % op2`  | `rem   t2, t0, t1` |
-| ` op1 == op2` | `sub   t2, t0, t1` <br/>`seqz  t2, t2` |
-| ` op1 != op2` | `sub   t2, t0, t1` <br/>`snez  t2, t2` |
-| ` op1 < op2`  | `slt   t2, t0, t1` |
-| ` op1 > op2`  | `sgt   t2, t0, t1` |
+| 运算          | 汇编指令                                  |
+| ------------- | ----------------------------------------- |
+| ` op1 + op2`  | `add   t2, t0, t1`                        |
+| `op1 - op2`   | `sub   t2, t0, t1`                        |
+| ` op1 * op2`  | `mul   t2, t0, t1`                        |
+| ` op1 / op2`  | `div   t2, t0, t1`                        |
+| ` op1 % op2`  | `rem   t2, t0, t1`                        |
+| ` op1 == op2` | `sub   t2, t0, t1` <br/>`seqz  t2, t2`    |
+| ` op1 != op2` | `sub   t2, t0, t1` <br/>`snez  t2, t2`    |
+| ` op1 < op2`  | `slt   t2, t0, t1`                        |
+| ` op1 > op2`  | `sgt   t2, t0, t1`                        |
 | ` op1 <= op2` | `sgt   t2, t0, t1` <br/>`xori  t2, t2, 1` |
 | ` op1 >= op2` | `slt   t2, t0, t1` <br/>`xori  t2, t2, 1` |
-| ` op1 && op2` | <见 3.2.> |
-| ` op1 || op2` | `or    t2, t0, t1` <br/>`snez  t2, t2` |
-| ` -op`        | `neg   t1, t0` |
-| ` !op`        | `seqz  t1, t0` |
-| ` ~op`        | `not   t1, t0` |
+| ` op1 && op2` | <见 3.2.>                                 |
+| ` op1 || op2` | `or    t2, t0, t1` <br/>`snez  t2, t2`    |
+| ` -op`        | `neg   t1, t0`                            |
+| ` !op`        | `seqz  t1, t0`                            |
+| ` ~op`        | `not   t1, t0`                            |
 
 ##### 3.2. 讨论
 
