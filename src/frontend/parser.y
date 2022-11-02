@@ -94,8 +94,9 @@ void scan_end();
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
-%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt 
-%nterm<mind::ast::Expr*> Expr
+%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl
+%nterm<mind::ast::Expr*> Expr LvalueExpr
+%nterm<mind::ast::Lvalue*> Lvalue
 /*   SUBSECTION 2.2: associativeness & precedences */
 %nonassoc QUESTION
 %left     OR
@@ -152,6 +153,7 @@ Stmt        : ReturnStmt {$$ = $1;}|
               IfStmt     {$$ = $1;}|
               WhileStmt  {$$ = $1;}|
               CompStmt   {$$ = $1;}|
+              VarDecl    {$$ = $1;}|
               BREAK SEMICOLON  
                 {$$ = new ast::BreakStmt(POS(@1));} |
               SEMICOLON
@@ -213,8 +215,22 @@ Expr        : ICONST
                 { $$ = new ast::NotExpr($2, POS(@1)); }
             | BNOT Expr
                 { $$ = new ast::BitNotExpr($2, POS(@1)); }
+            | LvalueExpr
+                { $$ = $1; }
+            | Lvalue ASSIGN Expr
+                { $$ = new ast::AssignExpr($1, $3, POS(@2)); }
             ;
-
+VarDecl     : Type IDENTIFIER SEMICOLON
+                { $$ = new ast::VarDecl($2, $1, POS(@1));}
+            | Type IDENTIFIER ASSIGN Expr SEMICOLON
+                { $$ = new ast::VarDecl($2, $1, $4, POS(@1));}
+            ;
+Lvalue      : IDENTIFIER
+                { $$ = new ast::VarRef($1, POS(@1)); }
+            ;
+LvalueExpr  : Lvalue
+                { $$ = new ast::LvalueExpr($1, POS(@1)); }
+            ;
 %%
 
 /* SECTION IV: customized section */

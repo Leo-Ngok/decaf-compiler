@@ -54,3 +54,4 @@ debug.sh
 *.my
 *.actual
 mind.dSYM
+.vscode

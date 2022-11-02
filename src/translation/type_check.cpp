@@ -50,6 +50,7 @@ class SemPass2 : public ast::Visitor {
     virtual void visit(ast::BitNotExpr *);
     virtual void visit(ast::LvalueExpr *);
     virtual void visit(ast::VarRef *);
+    virtual void visit(ast::IfExpr *);
     // Visiting statements
     virtual void visit(ast::VarDecl *);
     virtual void visit(ast::CompStmt *);
@@ -399,6 +400,30 @@ void SemPass2::visit(ast::AssignExpr *s) {
     }
 
     s->ATTR(type) = s->left->ATTR(type);
+}
+
+/* Visits an ast::IfExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::IfExpr node
+ */
+#include <iostream>
+void SemPass2::visit(ast::IfExpr *s) {
+    s->condition->accept(this);
+    if(!s->condition->ATTR(type)->equal(BaseType::Int)) {
+        issue(s->condition->getLocation(), new BadTestExprError());
+    }
+    s->true_brch->accept(this);
+    s->false_brch->accept(this);
+    // TODO: (optional) check if the true/false branches
+    // have consistent types (as it is assignment).
+    if(s->true_brch->ATTR(type) == s->false_brch->ATTR(type)) {
+        s->ATTR(type) = s->true_brch->ATTR(type);
+    } else {
+        // TODO: yield false assertion
+        // Fine if it is not assignment statement
+        // However, it is not checkable here.
+    }
 }
 
 /* Visits an ast::ExprStmt node.

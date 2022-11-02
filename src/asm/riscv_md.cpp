@@ -268,7 +268,9 @@ void RiscvDesc::emitTac(Tac *t) {
     case Tac::LOR:
         emitDualBinaryTac(RiscvInstr::OR, RiscvInstr::NE0, t);
         break;
-
+    case Tac::ASSIGN:
+        emitUnaryTac(RiscvInstr::MOVE, t);
+        break;
     default:
         mind_assert(false); // should not appear inside a basic block
     }

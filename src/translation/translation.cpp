@@ -84,7 +84,7 @@ void Translation::visit(ast::FuncDefn *f) {
 
     tr->endFunc();
 }
-
+#include <iostream>
 /* Translating an ast::AssignStmt node.
  *
  * NOTE:
@@ -92,6 +92,18 @@ void Translation::visit(ast::FuncDefn *f) {
  */
 void Translation::visit(ast::AssignExpr *s) {
     // TODO
+    s->e->accept(this);
+    s->left->accept(this);
+    switch(s->left->ATTR(lv_kind)){
+    case s->left->SIMPLE_VAR: {
+        ast::VarRef* lvar = (ast::VarRef*) s->left;
+        s->ATTR(val) = lvar->ATTR(sym)->getTemp();
+        tr->genAssign(lvar->ATTR(sym)->getTemp(), s->e->ATTR(val));
+        break;
+    }
+    default: break;
+    }
+    
 }
 
 /* Translating an ast::ExprStmt node.
@@ -309,7 +321,17 @@ void Translation::visit(ast::BitNotExpr *e) {
  *   different Lvalue kinds need different translation
  */
 void Translation::visit(ast::LvalueExpr *e) {
-    // TODO
+    e->lvalue->accept(this);
+    switch (e->lvalue->ATTR(lv_kind))
+    {
+    case e->lvalue->SIMPLE_VAR:
+        e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
+        break;
+    
+    default:
+        break;
+    }
+    
 }
 
 /* Translating an ast::VarRef node.
@@ -333,7 +355,61 @@ void Translation::visit(ast::VarRef *ref) {
 /* Translating an ast::VarDecl node.
  */
 void Translation::visit(ast::VarDecl *decl) {
+    Temp var = tr->getNewTempI4();
+    decl->ATTR(sym)->attachTemp(var);
+    if(decl->init != NULL) {
+        decl->init->accept(this);
+        tr->genAssign(var, decl->init->ATTR(val));
+    } else {
+        Temp default_init = tr->genLoadImm4(0);
+        tr->genAssign(var, default_init);
+    }
+
     // TODO
+}
+
+/* Translating an ast::IfExpr node.
+ */
+void Translation::visit(ast::IfExpr *e) {
+    // Note: this statement is equivalent to the following:
+
+    // T ret;
+    // if(CONDITION)
+    //      ret = TRUE_STMT
+    // else 
+    //      ret = FALSE_STMT
+
+    // Its 8086 assembly would be in this format
+    // ret is assigned to eax
+
+    // cmp CONDITION 0
+    // je  .L1 # False_Label
+    // mov eax, TRUE_STMT
+    // jmp .L2 # End_Label
+    // .L1
+    // mov eax, FALSE_STMT
+    // .L2
+    // mov <dest>, eax
+    
+    Temp res = tr->getNewTempI4();
+    Label False_Label = tr->getNewLabel();
+    Label End_Label = tr->getNewLabel();
+    e->condition->accept(this);
+    // if(condition)
+    tr->genJumpOnZero(False_Label, e->condition->ATTR(val));
+    // true block
+    e->true_brch->accept(this);
+    tr->genAssign(res, e->true_brch->ATTR(val));
+    tr->genJump(End_Label);
+    // else
+    // false block
+    tr->genMarkLabel(False_Label);
+    e->false_brch->accept(this);
+    tr->genAssign(res, e->false_brch->ATTR(val));
+    tr->genMarkLabel(End_Label);
+    // ? : operator should have a return value,
+    // so let's assign it.
+    e->ATTR(val) = res;
 }
 
 /* Translates an entire AST into a Piece list.
