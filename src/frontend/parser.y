@@ -105,7 +105,6 @@ void scan_end();
 %left LEQ GEQ LT GT
 %left     PLUS MINUS
 %left     TIMES SLASH MOD
-%right    ASSIGN
 %nonassoc LNOT NEG BNOT
 %nonassoc LBRACK DOT
 
