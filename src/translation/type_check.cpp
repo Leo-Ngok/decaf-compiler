@@ -32,10 +32,25 @@ class SemPass2 : public ast::Visitor {
     // Visiting expressions
     virtual void visit(ast::AssignExpr *);
     virtual void visit(ast::AddExpr *);
+    virtual void visit(ast::SubExpr *);
+    virtual void visit(ast::MulExpr *);
+    virtual void visit(ast::DivExpr *);
+    virtual void visit(ast::ModExpr *);
+    virtual void visit(ast::EquExpr *);
+    virtual void visit(ast::NeqExpr *);
+    virtual void visit(ast::LesExpr *);
+    virtual void visit(ast::GrtExpr *);
+    virtual void visit(ast::LeqExpr *);
+    virtual void visit(ast::GeqExpr *);
+    virtual void visit(ast::AndExpr *);
+    virtual void visit(ast::OrExpr *);
     virtual void visit(ast::IntConst *);
     virtual void visit(ast::NegExpr *);
+    virtual void visit(ast::NotExpr *);
+    virtual void visit(ast::BitNotExpr *);
     virtual void visit(ast::LvalueExpr *);
     virtual void visit(ast::VarRef *);
+    virtual void visit(ast::IfExpr *);
     // Visiting statements
     virtual void visit(ast::VarDecl *);
     virtual void visit(ast::CompStmt *);
@@ -99,12 +114,216 @@ void SemPass2::visit(ast::AddExpr *e) {
     e->ATTR(type) = BaseType::Int;
 }
 
+/* Visits an ast::SubExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::SubExpr node
+ */
+void SemPass2::visit(ast::SubExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::MulExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::MulExpr node
+ */
+void SemPass2::visit(ast::MulExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::DivExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::DivExpr node
+ */
+void SemPass2::visit(ast::DivExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::ModExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::ModExpr node
+ */
+void SemPass2::visit(ast::ModExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::EquExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::EquExpr node
+ */
+void SemPass2::visit(ast::EquExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::NeqExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::NeqExpr node
+ */
+void SemPass2::visit(ast::NeqExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::LesExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::LesExpr node
+ */
+void SemPass2::visit(ast::LesExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::GrtExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::GrtExpr node
+ */
+void SemPass2::visit(ast::GrtExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::LeqExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::LeqExpr node
+ */
+void SemPass2::visit(ast::LeqExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::GeqExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::GeqExpr node
+ */
+void SemPass2::visit(ast::GeqExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::AndExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::AndExpr node
+ */
+void SemPass2::visit(ast::AndExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::OrExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::OrExpr node
+ */
+void SemPass2::visit(ast::OrExpr *e) {
+    e->e1->accept(this);
+    expect(e->e1, BaseType::Int);
+
+    e->e2->accept(this);
+    expect(e->e2, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
 /* Visits an ast::NegExpr node.
  *
  * PARAMETERS:
  *   e     - the ast::NegExpr node
  */
 void SemPass2::visit(ast::NegExpr *e) {
+    e->e->accept(this);
+    expect(e->e, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::NotExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::NotExpr node
+ */
+void SemPass2::visit(ast::NotExpr *e) {
+    e->e->accept(this);
+    expect(e->e, BaseType::Int);
+
+    e->ATTR(type) = BaseType::Int;
+}
+
+/* Visits an ast::BitNotExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::BitNotExpr node
+ */
+void SemPass2::visit(ast::BitNotExpr *e) {
     e->e->accept(this);
     expect(e->e, BaseType::Int);
 
@@ -181,6 +400,30 @@ void SemPass2::visit(ast::AssignExpr *s) {
     }
 
     s->ATTR(type) = s->left->ATTR(type);
+}
+
+/* Visits an ast::IfExpr node.
+ *
+ * PARAMETERS:
+ *   e     - the ast::IfExpr node
+ */
+#include <iostream>
+void SemPass2::visit(ast::IfExpr *s) {
+    s->condition->accept(this);
+    if(!s->condition->ATTR(type)->equal(BaseType::Int)) {
+        issue(s->condition->getLocation(), new BadTestExprError());
+    }
+    s->true_brch->accept(this);
+    s->false_brch->accept(this);
+    // TODO: (optional) check if the true/false branches
+    // have consistent types (as it is assignment).
+    if(s->true_brch->ATTR(type) == s->false_brch->ATTR(type)) {
+        s->ATTR(type) = s->true_brch->ATTR(type);
+    } else {
+        // TODO: yield false assertion
+        // Fine if it is not assignment statement
+        // However, it is not checkable here.
+    }
 }
 
 /* Visits an ast::ExprStmt node.

@@ -10,7 +10,7 @@
 #include "3rdparty/vector.hpp"
 #include "ast/visitor.hpp"
 #include "define.hpp"
-
+#include "scope/scope_stack.hpp"
 // we assume the target machine is a 32-bit machine for simplicity.
 #define POINTER_SIZE 4
 #define WORD_SIZE 4
@@ -29,9 +29,24 @@ class Translation : public ast::Visitor {
     virtual void visit(ast::IfStmt *);
     virtual void visit(ast::ReturnStmt *);
     virtual void visit(ast::AddExpr *);
+    virtual void visit(ast::SubExpr *);
+    virtual void visit(ast::MulExpr *);
+    virtual void visit(ast::DivExpr *);
+    virtual void visit(ast::ModExpr *);
+    virtual void visit(ast::OrExpr *);
+    virtual void visit(ast::EquExpr *);
+    virtual void visit(ast::NeqExpr *);
+    virtual void visit(ast::LesExpr *);
+    virtual void visit(ast::GrtExpr *);
+    virtual void visit(ast::LeqExpr *);
+    virtual void visit(ast::GeqExpr *);
+    virtual void visit(ast::AndExpr *);
     virtual void visit(ast::IntConst *);
     virtual void visit(ast::NegExpr *);
+    virtual void visit(ast::NotExpr *);
+    virtual void visit(ast::BitNotExpr *);
     virtual void visit(ast::LvalueExpr *);
+    virtual void visit(ast::IfExpr *);
     virtual void visit(ast::VarRef *);
     virtual void visit(ast::VarDecl *);
     virtual void visit(ast::WhileStmt *);

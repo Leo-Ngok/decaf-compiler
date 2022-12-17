@@ -94,8 +94,9 @@ void scan_end();
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
-%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt 
-%nterm<mind::ast::Expr*> Expr
+%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl
+%nterm<mind::ast::Expr*> Expr LvalueExpr
+%nterm<mind::ast::Lvalue*> Lvalue
 /*   SUBSECTION 2.2: associativeness & precedences */
 %nonassoc QUESTION
 %left     OR
@@ -145,6 +146,9 @@ StmtList    : /* empty */
             | StmtList Stmt
                 { $1->append($2);
                   $$ = $1; }
+            | StmtList VarDecl
+                { $1->append($2);
+                    $$ = $1; }
             ;
 
 Stmt        : ReturnStmt {$$ = $1;}|
@@ -181,12 +185,54 @@ Expr        : ICONST
                 { $$ = $2; }
             | Expr PLUS Expr
                 { $$ = new ast::AddExpr($1, $3, POS(@2)); }
+            | Expr MINUS Expr
+                { $$ = new ast::SubExpr($1, $3, POS(@2)); } 
+            | Expr TIMES Expr
+                { $$ = new ast::MulExpr($1, $3, POS(@2)); }  
+            | Expr SLASH Expr
+                { $$ = new ast::DivExpr($1, $3, POS(@2)); } 
+            | Expr MOD Expr
+                { $$ = new ast::ModExpr($1, $3, POS(@2)); }
+            | Expr EQU Expr
+                { $$ = new ast::EquExpr($1, $3, POS(@2)); }
+            | Expr NEQ Expr
+                { $$ = new ast::NeqExpr($1, $3, POS(@2)); }
+            | Expr LT  Expr
+                { $$ = new ast::LesExpr($1, $3, POS(@2)); }
+            | Expr GT  Expr
+                { $$ = new ast::GrtExpr($1, $3, POS(@2)); }
+            | Expr LEQ Expr
+                { $$ = new ast::LeqExpr($1, $3, POS(@2)); }
+            | Expr GEQ Expr
+                { $$ = new ast::GeqExpr($1, $3, POS(@2)); }
+            | Expr AND Expr
+                { $$ = new ast::AndExpr($1, $3, POS(@2)); }
+            | Expr OR Expr
+                { $$ = new ast::OrExpr($1, $3, POS(@2));  }
             | Expr QUESTION Expr COLON Expr
                 { $$ = new ast::IfExpr($1,$3,$5,POS(@2)); }
             | MINUS Expr  %prec NEG
                 { $$ = new ast::NegExpr($2, POS(@1)); }
+            | LNOT Expr
+                { $$ = new ast::NotExpr($2, POS(@1)); }
+            | BNOT Expr
+                { $$ = new ast::BitNotExpr($2, POS(@1)); }
+            | LvalueExpr
+                { $$ = $1; }
+            | Lvalue ASSIGN Expr
+                { $$ = new ast::AssignExpr($1, $3, POS(@2)); }
             ;
-
+VarDecl     : Type IDENTIFIER SEMICOLON
+                { $$ = new ast::VarDecl($2, $1, POS(@1));}
+            | Type IDENTIFIER ASSIGN Expr SEMICOLON
+                { $$ = new ast::VarDecl($2, $1, $4, POS(@1));}
+            ;
+Lvalue      : IDENTIFIER
+                { $$ = new ast::VarRef($1, POS(@1)); }
+            ;
+LvalueExpr  : Lvalue
+                { $$ = new ast::LvalueExpr($1, POS(@1)); }
+            ;
 %%
 
 /* SECTION IV: customized section */

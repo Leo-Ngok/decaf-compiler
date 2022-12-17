@@ -26,7 +26,7 @@ using namespace mind;
 // declaration of empty string
 #define EMPTY_STR std::string()
 #define WORD_SIZE 4
-
+#define EOL '\n'
 /* Constructor of RiscvReg.
  *
  * PARAMETERS:
@@ -223,11 +223,54 @@ void RiscvDesc::emitTac(Tac *t) {
     case Tac::NEG:
         emitUnaryTac(RiscvInstr::NEG, t);
         break;
-    
+    case Tac::LNOT:
+        emitUnaryTac(RiscvInstr::LNOT, t);
+        break;
+    case Tac::BNOT:
+        emitUnaryTac(RiscvInstr::BNOT, t);
+        break;
     case Tac::ADD:
         emitBinaryTac(RiscvInstr::ADD, t);
         break;
-
+    case Tac::SUB:
+        emitBinaryTac(RiscvInstr::MINUS, t);
+        break;
+    case Tac::MUL:
+        emitBinaryTac(RiscvInstr::MUL, t);
+        break;
+    case Tac::DIV:
+        emitBinaryTac(RiscvInstr::DIV, t);
+        break;
+    case Tac::MOD:
+        emitBinaryTac(RiscvInstr::MOD, t);
+        break;
+    case Tac::EQU:
+        emitDualBinaryTac(RiscvInstr::MINUS, RiscvInstr::EQ0, t);
+        break;
+    case Tac::NEQ:
+        emitDualBinaryTac(RiscvInstr::MINUS, RiscvInstr::NE0, t);
+        break;
+    case Tac::LES:
+        emitBinaryTac(RiscvInstr::LT, t);
+        break;
+    case Tac::GTR:
+        emitBinaryTac(RiscvInstr::GT, t);
+        break;
+    case Tac::LEQ:
+        emitDualBinaryTac(RiscvInstr::GT, RiscvInstr::XORI, t);
+        break;
+    case Tac::GEQ:
+        emitDualBinaryTac(RiscvInstr::LT, RiscvInstr::XORI, t);
+        break;
+    case Tac::LAND:
+        emitLAND(t);
+        break;
+    case Tac::LOR:
+        emitDualBinaryTac(RiscvInstr::OR, RiscvInstr::NE0, t);
+        break;
+    case Tac::ASSIGN:
+        emitUnaryTac(RiscvInstr::MOVE, t);
+        break;
     default:
         mind_assert(false); // should not appear inside a basic block
     }
@@ -264,7 +307,19 @@ void RiscvDesc::emitUnaryTac(RiscvInstr::OpCode op, Tac *t) {
 
     addInstr(op, _reg[r0], _reg[r1], NULL, 0, EMPTY_STR, NULL);
 }
-
+bool RiscvDesc::emitBinTacHelper(Tac* t, int& r0, int& r1, int& r2) {
+    // eliminates useless assignments
+    if(t->LiveOut->contains(t->op0.var)) {
+        return false;
+    }
+    Set<Temp>* liveness = t->LiveOut->clone();
+    liveness->add(t->op1.var);
+    liveness->add(t->op2.var);
+    r1 = getRegForRead(t->op1.var, 0, liveness);
+    r2 = getRegForRead(t->op2.var, r1, liveness);
+    r0 = getRegForWrite(t->op0.var, r1, r2, liveness);
+    return true;
+}
 /* Translates a Binary TAC into Riscv instructions.
  *
  * PARAMETERS:
@@ -283,6 +338,49 @@ void RiscvDesc::emitBinaryTac(RiscvInstr::OpCode op, Tac *t) {
     int r0 = getRegForWrite(t->op0.var, r1, r2, liveness);
 
     addInstr(op, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
+}
+
+
+void RiscvDesc::emitDualBinaryTac(RiscvInstr::OpCode op1, RiscvInstr::OpCode op2, tac::Tac * t) {    
+    // eliminates useless assignments
+    if (!t->LiveOut->contains(t->op0.var))
+        return;
+
+    Set<Temp>* liveness = t->LiveOut->clone();
+    liveness->add(t->op1.var);
+    liveness->add(t->op2.var);
+    int r1 = getRegForRead(t->op1.var, 0, liveness);
+    int r2 = getRegForRead(t->op2.var, r1, liveness);
+    int r0 = getRegForWrite(t->op0.var, r1, r2, liveness);
+    addInstr(op1, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
+    addInstr(op2, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);
+}
+
+void RiscvDesc::emitLAND(Tac * t) {
+    // eliminates useless assignments
+    if (!t->LiveOut->contains(t->op0.var))
+        return;
+
+    Set<Temp>* liveness = t->LiveOut->clone();
+    liveness->add(t->op1.var);
+    liveness->add(t->op2.var);
+    int r1 = getRegForRead(t->op1.var, 0, liveness);
+    int r2 = getRegForRead(t->op2.var, r1, liveness);
+    int r0 = getRegForWrite(t->op0.var, r1, r2, liveness);
+    // Method 1: Use De Morgan rule: A and B == NOT(NOT(A AND B)) == NOT(NOT(A) OR NOT(B))
+    /*
+    addInstr(RiscvInstr::LNOT, _reg[r1], _reg[r1], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::LNOT, _reg[r2], _reg[r2], NULL, 0, EMPTY_STR, NULL);
+
+    addInstr(RiscvInstr::OR, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::LNOT, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);*/
+
+    // Method 2: First map the bit (anywhere) to the lowest, and then use logical and
+    addInstr(RiscvInstr::NE0, _reg[r1], _reg[r1], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::NE0, _reg[r2], _reg[r2], NULL, 0, EMPTY_STR, NULL);
+    addInstr(RiscvInstr::AND, _reg[r0], _reg[r1], _reg[r2], 0, EMPTY_STR, NULL);
+    // Method 3: treat it as an if-clause, and jump to the corresponding stamtents.
+    // Not implemented here, as this breaks the linked list and create a new chain.
 }
 
 /* Outputs a single instruction line.
@@ -457,7 +555,12 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::NEG:
         oss << "neg" << i->r0->name << ", " << i->r1->name;
         break;
-
+    case RiscvInstr::LNOT:
+        oss << "seqz" << i->r0->name << ", " << i->r1->name;
+        break;
+    case RiscvInstr::BNOT:
+        oss << "not" << i->r0->name << ", " << i->r1->name;
+        break;
     case RiscvInstr::MOVE:
         oss << "mv" << i->r0->name << ", " << i->r1->name;
         break;
@@ -476,12 +579,53 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     
     case RiscvInstr::ADD:
         oss << "add" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::MINUS:
+        oss << "sub" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::MUL:
+        oss << "mul" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::DIV:
+        oss << "div" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::MOD:
+        oss << "rem" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::EQ0:
+        oss << "seqz" <<i->r0->name << ", " << i->r1->name; 
+        break;    
+    case RiscvInstr::NE0:
+        oss << "snez" <<i->r0->name << ", " << i->r1->name;
+        break;    
+    case RiscvInstr::LT:
+        oss << "slt" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::GT:
+        oss << "sgt" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::LEQ:
+        oss << "ble" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::GEQ:
+        oss << "bge" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::AND:
+        oss << "and" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::OR:
+        oss << "or" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
+        break;    
+    case RiscvInstr::XORI:
+        oss << "xori" << i->r0->name << ", " << i->r1->name << ", " << 1;
         break;
     
     case RiscvInstr::BEQZ:
         oss << "beqz" << i->r0->name << ", " << i->l;
         break;
-
+    case RiscvInstr::BNEZ:
+        oss << "bnez" << i->r0->name << ", " << i->l;
+        break;
     case RiscvInstr::J:
         oss << "j" << i->l;
         break;

@@ -149,6 +149,7 @@ void SemPass1::visit(ast::CompStmt *c) {
     // closes function scope
     scopes->close();
 }
+#include <iostream>
 /* Visiting an ast::VarDecl node.
  *
  * NOTE:
@@ -163,14 +164,29 @@ void SemPass1::visit(ast::VarDecl *vdecl) {
 
     vdecl->type->accept(this);
     t = vdecl->type->ATTR(type);
-
     // TODO: Add a new symbol to a scope
     // 1. Create a new `Variable` symbol
+    Variable* var = new Variable(vdecl->name, t, vdecl->getLocation());
     // 2. Check for conflict in `scopes`, which is a global variable refering to
     // a scope stack
+    // std::cerr << std::endl << "before declaration" << std::endl;
+    // scopes->top()->dump(std::cerr);
+    Symbol* sym = scopes->lookup(vdecl->name, vdecl->getLocation(), false);
+    if(sym != NULL) {
+        issue(vdecl->getLocation(), new DeclConflictError(vdecl->name, sym));
+    }
     // 3. Declare the symbol in `scopes`
+    else {
+        scopes->declare(var);
+    }
+    // std::cerr << std::endl << "after declaration" << std::endl;
+    // scopes->top()->dump(std::cerr);
+    // std::cerr << std::endl << "end of after declaration" << std::endl;
     // 4. Special processing for global variables
+    // TODO: implement declaration support for global scope.
     // 5. Tag the symbol to `vdecl->ATTR(sym)`
+    
+    vdecl->ATTR(sym) = var;
 }
 
 /* Visiting an ast::IntType node.

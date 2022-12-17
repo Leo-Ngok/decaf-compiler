@@ -84,7 +84,7 @@ void Translation::visit(ast::FuncDefn *f) {
 
     tr->endFunc();
 }
-
+#include <iostream>
 /* Translating an ast::AssignStmt node.
  *
  * NOTE:
@@ -92,6 +92,18 @@ void Translation::visit(ast::FuncDefn *f) {
  */
 void Translation::visit(ast::AssignExpr *s) {
     // TODO
+    s->e->accept(this);
+    s->left->accept(this);
+    switch(s->left->ATTR(lv_kind)){
+    case s->left->SIMPLE_VAR: {
+        ast::VarRef* lvar = (ast::VarRef*) s->left;
+        s->ATTR(val) = lvar->ATTR(sym)->getTemp();
+        tr->genAssign(lvar->ATTR(sym)->getTemp(), s->e->ATTR(val));
+        break;
+    }
+    default: break;
+    }
+    
 }
 
 /* Translating an ast::ExprStmt node.
@@ -165,6 +177,114 @@ void Translation::visit(ast::AddExpr *e) {
     e->ATTR(val) = tr->genAdd(e->e1->ATTR(val), e->e2->ATTR(val));
 }
 
+/* Translating an ast::SubExpr node.
+ */
+void Translation::visit(ast::SubExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genSub(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::MulExpr node.
+ */
+void Translation::visit(ast::MulExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genMul(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::DivExpr node.
+ */
+void Translation::visit(ast::DivExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genDiv(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::ModExpr node.
+ */
+void Translation::visit(ast::ModExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genMod(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::AddExpr node.
+ */
+void Translation::visit(ast::EquExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genEqu(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::NeqExpr node.
+ */
+void Translation::visit(ast::NeqExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genNeq(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::LesExpr node.
+ */
+void Translation::visit(ast::LesExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genLes(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::GrtExpr node.
+ */
+void Translation::visit(ast::GrtExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genGtr(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::LeqExpr node.
+ */
+void Translation::visit(ast::LeqExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genLeq(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::GeqExpr node.
+ */
+void Translation::visit(ast::GeqExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genGeq(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::AndExpr node.
+ */
+void Translation::visit(ast::AndExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genLAnd(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
+/* Translating an ast::OrExpr node.
+ */
+void Translation::visit(ast::OrExpr *e) {
+    e->e1->accept(this);
+    e->e2->accept(this);
+
+    e->ATTR(val) = tr->genLOr(e->e1->ATTR(val), e->e2->ATTR(val));
+}
+
 /* Translating an ast::IntConst node.
  */
 void Translation::visit(ast::IntConst *e) {
@@ -179,13 +299,39 @@ void Translation::visit(ast::NegExpr *e) {
     e->ATTR(val) = tr->genNeg(e->e->ATTR(val));
 }
 
+/* Translating an ast::NotExpr node.
+ */
+void Translation::visit(ast::NotExpr *e) {
+    e->e->accept(this);
+
+    e->ATTR(val) = tr->genLNot(e->e->ATTR(val));
+}
+
+/* Translating an ast::BitNotExpr node.
+ */
+void Translation::visit(ast::BitNotExpr *e) {
+    e->e->accept(this);
+
+    e->ATTR(val) = tr->genBNot(e->e->ATTR(val));
+}
+
 /* Translating an ast::LvalueExpr node.
  *
  * NOTE:
  *   different Lvalue kinds need different translation
  */
 void Translation::visit(ast::LvalueExpr *e) {
-    // TODO
+    e->lvalue->accept(this);
+    switch (e->lvalue->ATTR(lv_kind))
+    {
+    case e->lvalue->SIMPLE_VAR:
+        e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
+        break;
+    
+    default:
+        break;
+    }
+    
 }
 
 /* Translating an ast::VarRef node.
@@ -209,7 +355,61 @@ void Translation::visit(ast::VarRef *ref) {
 /* Translating an ast::VarDecl node.
  */
 void Translation::visit(ast::VarDecl *decl) {
+    Temp var = tr->getNewTempI4();
+    decl->ATTR(sym)->attachTemp(var);
+    if(decl->init != NULL) {
+        decl->init->accept(this);
+        tr->genAssign(var, decl->init->ATTR(val));
+    } else {
+        Temp default_init = tr->genLoadImm4(0);
+        tr->genAssign(var, default_init);
+    }
+
     // TODO
+}
+
+/* Translating an ast::IfExpr node.
+ */
+void Translation::visit(ast::IfExpr *e) {
+    // Note: this statement is equivalent to the following:
+
+    // T ret;
+    // if(CONDITION)
+    //      ret = TRUE_STMT
+    // else 
+    //      ret = FALSE_STMT
+
+    // Its 8086 assembly would be in this format
+    // ret is assigned to eax
+
+    // cmp CONDITION 0
+    // je  .L1 # False_Label
+    // mov eax, TRUE_STMT
+    // jmp .L2 # End_Label
+    // .L1
+    // mov eax, FALSE_STMT
+    // .L2
+    // mov <dest>, eax
+    
+    Temp res = tr->getNewTempI4();
+    Label False_Label = tr->getNewLabel();
+    Label End_Label = tr->getNewLabel();
+    e->condition->accept(this);
+    // if(condition)
+    tr->genJumpOnZero(False_Label, e->condition->ATTR(val));
+    // true block
+    e->true_brch->accept(this);
+    tr->genAssign(res, e->true_brch->ATTR(val));
+    tr->genJump(End_Label);
+    // else
+    // false block
+    tr->genMarkLabel(False_Label);
+    e->false_brch->accept(this);
+    tr->genAssign(res, e->false_brch->ATTR(val));
+    tr->genMarkLabel(End_Label);
+    // ? : operator should have a return value,
+    // so let's assign it.
+    e->ATTR(val) = res;
 }
 
 /* Translates an entire AST into a Piece list.
