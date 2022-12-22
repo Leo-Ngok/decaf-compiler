@@ -55,3 +55,4 @@ debug.sh
 *.actual
 mind.dSYM
 .vscode
+.vs

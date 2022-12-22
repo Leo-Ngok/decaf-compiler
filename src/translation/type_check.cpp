@@ -407,7 +407,6 @@ void SemPass2::visit(ast::AssignExpr *s) {
  * PARAMETERS:
  *   e     - the ast::IfExpr node
  */
-#include <iostream>
 void SemPass2::visit(ast::IfExpr *s) {
     s->condition->accept(this);
     if(!s->condition->ATTR(type)->equal(BaseType::Int)) {

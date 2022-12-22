@@ -64,6 +64,7 @@ class Visitor {
     virtual void visit(WhileStmt *) {}
     virtual void visit(EmptyStmt *) {}
     virtual void visit(BreakStmt *) {}
+    virtual void visit(ContStmt *) {}
     virtual void visit(IfStmt *) {}
     virtual void visit(ReturnStmt *) {}
     // Declarations

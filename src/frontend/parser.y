@@ -59,6 +59,7 @@ void scan_end();
    WHILE "while"
    FOR "for"
    BREAK "break"
+   CONTINUE "continue"
    EQU "=="
    NEQ "!="
    AND "&&" 
@@ -94,8 +95,8 @@ void scan_end();
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
-%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl
-%nterm<mind::ast::Expr*> Expr LvalueExpr
+%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl ForStmt InitStmt
+%nterm<mind::ast::Expr*> Expr LvalueExpr NExpr 
 %nterm<mind::ast::Lvalue*> Lvalue
 /*   SUBSECTION 2.2: associativeness & precedences */
 %nonassoc QUESTION
@@ -155,9 +156,12 @@ Stmt        : ReturnStmt {$$ = $1;}|
               ExprStmt   {$$ = $1;}|
               IfStmt     {$$ = $1;}|
               WhileStmt  {$$ = $1;}|
+              ForStmt    {$$ = $1;}|
               CompStmt   {$$ = $1;}|
               BREAK SEMICOLON  
                 {$$ = new ast::BreakStmt(POS(@1));} |
+              CONTINUE SEMICOLON
+                { $$ = new ast::ContStmt(POS(@1));} |
               SEMICOLON
                 {$$ = new ast::EmptyStmt(POS(@1));}
             ;
@@ -166,6 +170,29 @@ CompStmt    : LBRACE StmtList RBRACE
             ;
 WhileStmt   : WHILE LPAREN Expr RPAREN Stmt
                 { $$ = new ast::WhileStmt($3, $5, POS(@1)); }
+            ;
+ForStmt     : FOR LPAREN InitStmt NExpr SEMICOLON NExpr RPAREN Stmt
+                { 
+                    /*Note that for block can be transformed to while block */
+                    /* for((1);(2);(3)) (4)
+                    is the same as
+                    (1);
+                    while((2)) {
+                        (4)
+                        (3)
+                    }
+                    */
+                    ast::StmtList* forstmts = new ast::StmtList();
+                    forstmts->append($3);
+                    /* Construct body first */
+                    ast::StmtList* forbody = new ast::StmtList();
+                    forbody->append($8);
+                    forbody->append(new ast::ExprStmt($6, POS(@6)));
+                    ast::CompStmt* forblock = new ast::CompStmt(forbody, POS(@8));
+                    ast::WhileStmt* resultant_while = new ast::WhileStmt($4, forblock, POS(@1));
+                    forstmts->append(resultant_while);
+                    $$ = new ast::CompStmt(forstmts, POS(@1));
+                }
             ;
 IfStmt      : IF LPAREN Expr RPAREN Stmt
                 { $$ = new ast::IfStmt($3, $5, new ast::EmptyStmt(POS(@5)), POS(@1)); }
@@ -222,6 +249,15 @@ Expr        : ICONST
             | Lvalue ASSIGN Expr
                 { $$ = new ast::AssignExpr($1, $3, POS(@2)); }
             ;
+NExpr       : Expr
+                { $$ = $1; }
+            | /* Nullable Expression */
+                { /* Just do nothing */ }
+            ;
+InitStmt   : NExpr SEMICOLON
+                { $$ = new ast::ExprStmt($1, POS(@1)); }
+            | VarDecl 
+                { $$ = $1; }
 VarDecl     : Type IDENTIFIER SEMICOLON
                 { $$ = new ast::VarDecl($2, $1, POS(@1));}
             | Type IDENTIFIER ASSIGN Expr SEMICOLON

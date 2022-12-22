@@ -74,3 +74,18 @@ void BreakStmt::dumpTo(std::ostream &os) {
     newLine(os);
     decIndent(os);
 }
+
+
+ContStmt::ContStmt(Location *l){
+    setBasicInfo(CONTINUE_STMT, l);
+}
+
+void ContStmt::accept(Visitor *v){
+    v->visit(this);
+}
+
+void ContStmt::dumpTo(std::ostream &os){
+    ASTNode::dumpTo(os);
+    newLine(os);
+    decIndent(os);
+}

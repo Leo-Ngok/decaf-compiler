@@ -137,7 +137,8 @@ void Translation::visit(ast::WhileStmt *s) {
 
     Label old_break = current_break_label;
     current_break_label = L2;
-
+    Label legacy_continue = current_continue_label;
+    current_continue_label = L1;
     tr->genMarkLabel(L1);
     s->condition->accept(this);
     tr->genJumpOnZero(L2, s->condition->ATTR(val));
@@ -146,7 +147,7 @@ void Translation::visit(ast::WhileStmt *s) {
     tr->genJump(L1);
 
     tr->genMarkLabel(L2);
-
+    current_continue_label = legacy_continue;
     current_break_label = old_break;
 }
 
@@ -154,6 +155,12 @@ void Translation::visit(ast::WhileStmt *s) {
  */
 void Translation::visit(ast::BreakStmt *s) { tr->genJump(current_break_label); }
 
+
+/* Translating an ast::ContStmt node.
+*/
+void Translation::visit(ast::ContStmt *s) {
+    tr->genJump(current_continue_label);
+}
 /* Translating an ast::CompStmt node.
  */
 void Translation::visit(ast::CompStmt *c) {
