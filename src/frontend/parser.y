@@ -95,7 +95,7 @@ void scan_end();
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
-%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl ForStmt InitStmt
+%nterm<mind::ast::Statement*> Stmt  ReturnStmt ExprStmt IfStmt  CompStmt WhileStmt VarDecl ForStmt InitStmt DoWhileStmt
 %nterm<mind::ast::Expr*> Expr LvalueExpr NExpr 
 %nterm<mind::ast::Lvalue*> Lvalue
 /*   SUBSECTION 2.2: associativeness & precedences */
@@ -156,6 +156,7 @@ Stmt        : ReturnStmt {$$ = $1;}|
               ExprStmt   {$$ = $1;}|
               IfStmt     {$$ = $1;}|
               WhileStmt  {$$ = $1;}|
+              DoWhileStmt{$$ = $1;}|
               ForStmt    {$$ = $1;}|
               CompStmt   {$$ = $1;}|
               BREAK SEMICOLON  
@@ -183,17 +184,32 @@ ForStmt     : FOR LPAREN InitStmt NExpr SEMICOLON NExpr RPAREN Stmt
                     }
                     */
                     ast::StmtList* forstmts = new ast::StmtList();
+                    if($3 == nullptr)
+                        $3 = new ast::EmptyStmt(POS(@3));
                     forstmts->append($3);
                     /* Construct body first */
                     ast::StmtList* forbody = new ast::StmtList();
                     forbody->append($8);
-                    forbody->append(new ast::ExprStmt($6, POS(@6)));
+                    if($6 != nullptr)
+                        forbody->append(new ast::ExprStmt($6, POS(@6)));
                     ast::CompStmt* forblock = new ast::CompStmt(forbody, POS(@8));
-                    ast::WhileStmt* resultant_while = new ast::WhileStmt($4, forblock, POS(@1));
+                    /* Just use for condition as while condition */
+                    if($4 == nullptr) {
+                        $4 = new ast::IntConst(1, POS(@4));
+                    }
+                    ast::WhileStmt* resultant_while = new ast::WhileStmt($4, forblock, POS(@1), true);
                     forstmts->append(resultant_while);
                     $$ = new ast::CompStmt(forstmts, POS(@1));
                 }
             ;
+DoWhileStmt: DO Stmt WHILE LPAREN Expr RPAREN SEMICOLON
+                {
+                    ast::StmtList* dowstmts = new ast::StmtList();
+                    dowstmts->append($2);
+                    ast::WhileStmt* resultant_while = new ast::WhileStmt($5, $2, POS(@1));
+                    dowstmts->append(resultant_while);
+                    $$ = new ast::CompStmt(dowstmts, POS(@1));
+                }
 IfStmt      : IF LPAREN Expr RPAREN Stmt
                 { $$ = new ast::IfStmt($3, $5, new ast::EmptyStmt(POS(@5)), POS(@1)); }
             | IF LPAREN Expr RPAREN Stmt ELSE Stmt
@@ -255,7 +271,12 @@ NExpr       : Expr
                 { /* Just do nothing */ }
             ;
 InitStmt   : NExpr SEMICOLON
-                { $$ = new ast::ExprStmt($1, POS(@1)); }
+                { 
+                    if($1 != nullptr)
+                        $$ = new ast::ExprStmt($1, POS(@1));
+                    else 
+                        $$ = new ast::EmptyStmt(POS(@1)); 
+                }
             | VarDecl 
                 { $$ = $1; }
 VarDecl     : Type IDENTIFIER SEMICOLON

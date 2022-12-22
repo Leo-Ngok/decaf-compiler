@@ -296,7 +296,7 @@ class ReturnStmt : public Statement {
  */
 class WhileStmt : public Statement {
   public:
-    WhileStmt(Expr *cond, Statement *loop_body, Location *l);
+    WhileStmt(Expr *cond, Statement *loop_body, Location *l, bool _isfor=false);
 
     virtual void accept(Visitor *);
     virtual void dumpTo(std::ostream &);
@@ -304,6 +304,7 @@ class WhileStmt : public Statement {
   public:
     Expr *condition;
     Statement *loop_body;
+    bool is_for;
 };
 /* Node representing an comp statement.
  *

@@ -134,17 +134,31 @@ void Translation::visit(ast::IfStmt *s) {
 void Translation::visit(ast::WhileStmt *s) {
     Label L1 = tr->getNewLabel();
     Label L2 = tr->getNewLabel();
-
+    Label L3 = tr->getNewLabel();
     Label old_break = current_break_label;
     current_break_label = L2;
     Label legacy_continue = current_continue_label;
     current_continue_label = L1;
     tr->genMarkLabel(L1);
-    s->condition->accept(this);
+    if(s->condition != nullptr)
+        s->condition->accept(this);
     tr->genJumpOnZero(L2, s->condition->ATTR(val));
-
-    s->loop_body->accept(this);
-    tr->genJump(L1);
+    if(s->is_for){
+        current_continue_label = L3;
+        auto stmtsptr = dynamic_cast<ast::CompStmt*>(s->loop_body)->stmts->begin();
+        /* Loop body */
+        (*stmtsptr)->accept(this);
+        stmtsptr++;
+        /* Insert continue label */
+        tr->genMarkLabel(L3);
+        /* step expression */
+        if(stmtsptr != dynamic_cast<ast::CompStmt*>(s->loop_body)->stmts->end())
+            (*stmtsptr)->accept(this);
+        tr->genJump(L1);
+    } else {
+        s->loop_body->accept(this);
+        tr->genJump(L1);
+    }
 
     tr->genMarkLabel(L2);
     current_continue_label = legacy_continue;

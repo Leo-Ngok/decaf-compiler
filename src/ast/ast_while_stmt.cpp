@@ -20,12 +20,13 @@ using namespace mind::ast;
  *   body    - the loop body
  *   l       - position in the source text
  */
-WhileStmt::WhileStmt(Expr *cond, Statement *body, Location *l) {
+WhileStmt::WhileStmt(Expr *cond, Statement *body, Location *l, bool _isfor) {
 
     setBasicInfo(WHILE_STMT, l);
 
     condition = cond;
     loop_body = body;
+    is_for = _isfor;
 }
 
 /* Visits the current node.

@@ -155,28 +155,18 @@ step 8:
 
 step 8:
 
-（**更改2**） 在 `frontend/parser.y` 增加非终结符 `ForStmt` 的产生式，在语义行为部分转换为 While 循环。
+（**更改2**） 在 `frontend/parser.y` 增加非终结符 `ForStmt` 的产生式，在语义行为部分转换为 While 循环；同时在 while 语句类增加 for 循环属性的字段（构造函数最后的 true），其大概转换思想如下（关于 true 的字段是防止在 continue 跳转的时候忽略 step 语句）。
 
 ```
-Stmt        : ForStmt {$$ = $1;} 
-/* Skipped */
-ForStmt     : FOR LPAREN InitStmt NExpr SEMICOLON NExpr RPAREN Stmt
-                { 
-                    
-                    ast::StmtList* forstmts = new ast::StmtList();
-                    /* 初始化语句 */
-                    forstmts->append($3);
-                    /* 循环体部分： 除了即有的 for 循环体语句，也应该在最后加上 step 的语句 */
-                    ast::StmtList* forbody = new ast::StmtList();
-                    forbody->append($8);
-                    forbody->append(new ast::ExprStmt($6, POS(@6)));
-                    ast::CompStmt* forblock = new ast::CompStmt(forbody, POS(@8));
-                    /* for 的结束条件即为等价的 while 的结束条件 */
-                    ast::WhileStmt* resultant_while = new ast::WhileStmt($4, forblock, POS(@1));
-                    forstmts->append(resultant_while);
-                    $$ = new ast::CompStmt(forstmts, POS(@1));
-                }
-            ;
+for(init; cond; step)
+	body
+is equivalent to
+init;
+while(cond) {
+	body
+	continue_tag:
+	step;
+}
 ```
 
 （**更改3**） 实现 continue 语句，具体类比 break 语句的实现。
@@ -198,11 +188,13 @@ void ContStmt::accept(Visitor *v){
 }
 ```
 
+（**更改5**） 实现 do-while 的语法分析，类似于 for 语句。
+
 ###### 2.3.3. 语义分析
 
 step 7:
 
-（**更改5**）编译器第一次遍历语法树，构造符号表，修改 `translation/build_sym.cpp` 对`CompStmt` 的实现，具体如下。
+（**更改6**）编译器第一次遍历语法树，构造符号表，修改 `translation/build_sym.cpp` 对`CompStmt` 的实现，具体如下。
 
 ```c++
 Scope *scope = new LocalScope();
@@ -223,7 +215,7 @@ scopes->close();
 
 需要修改 `translation/translation.hpp` 和 `translation/translation.cpp` ，把 继续循环 节点翻译为三地址码。
 
-（**更改6**）标记 `continue` 实际跳转位置，即循环开始标记。
+（**更改7**）标记 `continue` 实际跳转位置，即循环开始标记。
 
 先在 `translation/translation.hpp` 定义该标记：
 
@@ -231,15 +223,19 @@ scopes->close();
 tac::Label current_continue_label;
 ```
 
-（**更改7**）在 While 语句翻译阶段，记录 continue 的标记；
+（**更改8**）在 While 语句翻译阶段，记录 continue 的标记；
 
-（**更改8**）在 `translation/translation.cpp` 实现 continue 语句的翻译（同时在头文件补充声明）：
+（**更改9** ) 在 While 语句阶段，增加 for 循环的跳转标记处理。
+
+（**更改10**）在 `translation/translation.cpp` 实现 continue 语句的翻译（同时在头文件补充声明）：
 
 ```c++
 void Translation::visit(ast::ContStmt *s) {
     tr->genJump(current_continue_label);
 }
 ```
+
+
 
 ###### 2.3.5. 中间代码优化
 
