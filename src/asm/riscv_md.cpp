@@ -183,6 +183,7 @@ RiscvInstr *RiscvDesc::prepareSingleChain(BasicBlock *b, FlowGraph *g) {
         break;
 
     case BasicBlock::BY_RETURN:
+        // TODO: revert all callee-saved registers.
         r0 = getRegForRead(b->var, 0, b->LiveOut);
         spillDirtyRegs(b->LiveOut); // just to deattach all temporary variables
         addInstr(RiscvInstr::MOVE, _reg[RiscvReg::A0], _reg[r0], NULL, 0,
@@ -271,9 +272,31 @@ void RiscvDesc::emitTac(Tac *t) {
     case Tac::ASSIGN:
         emitUnaryTac(RiscvInstr::MOVE, t);
         break;
+    case Tac::SAVEARG:
+        passParamReg(t, t->mark);
+        break;
+    case Tac::FETCHARG:
+        fetchParamReg(t, t->mark);
+        break;
+    case Tac::CALL:
+        spillDirtyRegs(t->LiveOut);
+        addInstr(RiscvInstr::CALL, NULL, NULL, NULL, 0,
+                 t->op1.label->str_form, NULL);
+        emitRevertReg(t);
+        setReturnValue(t);
+        break;
     default:
         mind_assert(false); // should not appear inside a basic block
     }
+}
+
+void RiscvDesc::setReturnValue(Tac *t) {
+    // eliminates useless assignments
+    if (!t->LiveOut->contains(t->op0.var))
+        return;
+    // we do assume return value is put at a0
+    int r0 = getRegForWrite(t->op0.var, 0, 0, t->LiveOut);
+    addInstr(RiscvInstr::MOVE, _reg[r0], _reg[RiscvReg::A0], nullptr, 0, EMPTY_STR, NULL);
 }
 
 /* Translates a LoadImm4 TAC into Riscv instructions.
@@ -408,7 +431,7 @@ void RiscvDesc::emit(std::string label, const char *body, const char *comment) {
 
     os << std::endl;
 }
-
+int extra_params=0;
 /* Use to put a specified reg to another to pass params.
  *
  * PARAMETERS:
@@ -416,9 +439,30 @@ void RiscvDesc::emit(std::string label, const char *body, const char *comment) {
  *   cnt   - reg offset A0 + cnt
  */
 void RiscvDesc::passParamReg(Tac *t, int cnt) {
+    static int prevcnt = 0;
+    
     t->LiveOut->add(t->op0.var);
+    if(prevcnt == 0) {
+        spillDirtyRegs(t->LiveOut);
+    }
+    prevcnt = cnt;
     std::ostringstream oss;
     // RISC-V use a0-a7 to pass the first 8 parameters, so it's ok to do so.
+    if(cnt >= 8) {
+        int i = lookupReg(t->op0.var);
+        if(i < 0) {
+            auto v = t->op0.var;
+            RiscvReg *base = _reg[RiscvReg::FP];
+            oss << "load " << v << " from (" << base->name
+                << (v->offset < 0 ? "" : "+") << v->offset << ") into "
+                << _reg[RiscvReg::A0]->name;
+            addInstr(RiscvInstr::LW, _reg[RiscvReg::A0], base, NULL, v->offset, EMPTY_STR,
+                        oss.str().c_str());
+            i = RiscvReg::A0;
+        }
+        emitPush(_reg[i]);
+        return;
+    }
     spillReg(RiscvReg::A0 + cnt, t->LiveOut);
     int i = lookupReg(t->op0.var);
     if(i < 0) {
@@ -433,6 +477,23 @@ void RiscvDesc::passParamReg(Tac *t, int cnt) {
         oss << "copy " << _reg[i]->name << " to " << _reg[RiscvReg::A0 + cnt]->name;
         addInstr(RiscvInstr::MOVE, _reg[RiscvReg::A0 + cnt], _reg[i], NULL, 0,
                     EMPTY_STR, oss.str().c_str());
+    }
+}
+
+void RiscvDesc::fetchParamReg(Tac* t, int order) {
+    if(!t->LiveOut->contains(t->op0.var)) {
+        return;
+    }
+    int r0 = getRegForWrite(t->op0.var, 0,0, t->LiveOut);
+    if(order < 8){
+        addInstr(
+            RiscvInstr::MOVE,  _reg[r0], _reg[RiscvReg::A0 + order], 
+            nullptr, 0, EMPTY_STR, NULL);
+    } else {
+        addInstr(
+            RiscvInstr::LW, _reg[r0], _reg[RiscvReg::FP], 
+            nullptr, WORD_SIZE * (order - 8), EMPTY_STR, NULL);
+        
     }
 }
 
@@ -530,6 +591,7 @@ void RiscvDesc::emitProlog(Label entry_label, int frame_size) {
     emit(EMPTY_STR, "mv    fp, sp", NULL);
     oss << "addi  sp, sp, -" << (frame_size + 2 * WORD_SIZE); // 2 WORD's for old $fp and $ra
     emit(EMPTY_STR, oss.str().c_str(), NULL);
+    // TODO: save all callee-saved registers here.
 }
 
 /* Outputs a single instruction.
@@ -576,7 +638,9 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::RET:
         oss << "ret";
         break;
-    
+    case RiscvInstr::ADDI:
+        oss << "addi" << i->r0->name << ", " << i->r1->name << ", " << i->i;
+        break;
     case RiscvInstr::ADD:
         oss << "add" << i->r0->name << ", " << i->r1->name << ", " << i->r2->name;
         break;    
@@ -629,7 +693,9 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::J:
         oss << "j" << i->l;
         break;
-
+    case RiscvInstr::CALL:
+        oss << "call" << "_" + i->l;
+        break;
     default:
         mind_assert(false); // other instructions not supported
     }
@@ -903,4 +969,59 @@ int RiscvDesc::selectRegToSpill(int avoid1, int avoid2, LiveSet *live) {
              !_reg[_lastUsedReg]->general);
 
     return _lastUsedReg;
+}
+#define STR_EXPAND(tok) #tok
+#define STR(tok) STR_EXPAND(tok)
+void RiscvDesc::emitPush(RiscvReg* reg) {
+    // push R
+    // SP = SP - WORD_SIZE
+    addInstr(RiscvInstr::ADDI,  _reg[RiscvReg::SP],  _reg[RiscvReg::SP],NULL, -WORD_SIZE, EMPTY_STR, NULL);
+    // Mem[SP] = R
+    addInstr(RiscvInstr::SW, reg, _reg[RiscvReg::SP], NULL, 0, EMPTY_STR,
+                 NULL);
+}
+
+void RiscvDesc::emitPop(RiscvReg* reg) {
+    // pop R
+    // R = Mem[SP]
+    addInstr(RiscvInstr::LW, reg, _reg[RiscvReg::SP], NULL, 0, EMPTY_STR,
+                 NULL);
+    // SP = SP + WORD_SIZE
+    addInstr(RiscvInstr::ADDI,  _reg[RiscvReg::SP],  _reg[RiscvReg::SP],NULL, WORD_SIZE, EMPTY_STR, NULL);
+}
+
+inline bool isCallerSaved(int rank) {
+    return (RiscvReg::T0 <= rank && rank <= RiscvReg::T2) 
+    || (RiscvReg::T3 <= rank && rank <= RiscvReg::T6) || RiscvReg::RA == rank;
+    //return -1 < rank;
+}
+#include "3rdparty/stack.hpp"
+util::Stack<int> callerStack;
+void RiscvDesc::emitSaveReg(Tac* t) {
+    /*
+    for(auto liveit = t->LiveOut->begin(); 
+    liveit != t->LiveOut->end(); ++liveit) {
+        int r = lookupReg((*liveit));
+        if(isCallerSaved(r)) {
+            callerStack.push(r);
+            emitPush(_reg[r]);
+        }
+    }*/
+    for(int i = 0; i < RiscvReg::TOTAL_NUM; i++) {
+        if(_reg[i]->general) {
+            callerStack.push(i);
+            emitPush(_reg[i]);
+        }
+    }
+}
+
+void RiscvDesc::emitRevertReg(Tac* t) {
+    if(extra_params > 0)
+        addInstr(RiscvInstr::ADDI,  _reg[RiscvReg::SP],  _reg[RiscvReg::SP],NULL, extra_params * WORD_SIZE, EMPTY_STR, NULL);
+    extra_params = 0;
+    while(!callerStack.empty()) {
+        int r = callerStack.top();
+        callerStack.pop();
+        emitPop(_reg[r]);
+    }
 }

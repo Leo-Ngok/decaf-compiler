@@ -26,6 +26,7 @@ const char *ASTNode::node_name[] = {"add",
                                     "break",
                                     "call",
                                     "comp",
+                                    "continue",
                                     "div",
 
                                     "equ",
@@ -39,6 +40,7 @@ const char *ASTNode::node_name[] = {"add",
                                     "if",
                                     "iconst",
                                     "itype",
+
                                     "leq",
                                     "les",
                                     "lvalue",
@@ -48,13 +50,16 @@ const char *ASTNode::node_name[] = {"add",
                                     "neq",
                                     "not",
                                     "or",
+
                                     "program",
                                     "return",
                                     "sub",
                                     "var",
                                     "varref",
                                     "while",
-                                    "FuncOrDecl"};
+                                    "FuncOrDecl"
+                                    "FuncCall"
+                                    };
 
 /*  Whether to print the decorated abstract syntax tree.
  */

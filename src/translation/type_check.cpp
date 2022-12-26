@@ -51,6 +51,7 @@ class SemPass2 : public ast::Visitor {
     virtual void visit(ast::LvalueExpr *);
     virtual void visit(ast::VarRef *);
     virtual void visit(ast::IfExpr *);
+    virtual void visit(ast::FuncRef *);
     // Visiting statements
     virtual void visit(ast::VarDecl *);
     virtual void visit(ast::CompStmt *);
@@ -501,6 +502,53 @@ void SemPass2::visit(ast::FuncDefn *f) {
     for (it = f->stmts->begin(); it != f->stmts->end(); ++it)
         (*it)->accept(this);
     scopes->close();
+}
+
+
+void SemPass2::visit(ast::FuncRef *ref) {
+    // CASE I: owner is NULL ==> referencing a local var or a member var?
+    Symbol *v = scopes->lookup(ref->name, ref->getLocation());
+    if (NULL == v) {
+        issue(ref->getLocation(), new SymbolNotFoundError(ref->name));
+        goto issue_error_type;
+
+    } else if (!v->isFunction()) {
+        issue(ref->getLocation(), new NotMethodError(v));
+        goto issue_error_type;
+
+    } else goto success;
+        
+
+    // sometimes "GOTO" will make things simpler. this is one of such cases:
+issue_error_type:
+    ref->ATTR(type) = BaseType::Error;
+    ref->ATTR(sym) = NULL;
+    return;
+success:
+    Function * __fv = dynamic_cast<Function *>(v);
+    auto formal_args = __fv->getType()->getArgList();
+    auto actual_args = ref->args;
+    if(formal_args->length() != actual_args->length()) {
+        issue(ref->getLocation(), new BadArgCountError(__fv));
+        goto issue_error_type;
+    }
+    
+    auto fargit = formal_args->begin();
+    auto aargit = actual_args->begin();
+    while(fargit != formal_args->end()) {
+        (*aargit)->accept(this);
+        if(!(*fargit)->compatible(((*aargit)->ATTR(type)))) {
+            issue((*aargit)->getLocation(), new UnexpectedTypeError(
+                (*aargit)->ATTR(type), *fargit
+            ));
+            goto issue_error_type;
+        }
+        ++fargit;
+        ++aargit;
+    }
+    ref->ATTR(type) =  __fv->getResultType();
+    ref->ATTR(sym) = (Function*) v;
+    return;
 }
 
 /* Visits an ast::Program node.

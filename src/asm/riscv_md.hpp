@@ -113,6 +113,8 @@ struct RiscvInstr : public Instr {
         LI,
         SW,
         MOVE,
+        CALL,
+        ADDI,
         // You could add other instructions/pseudo instructions here
     } op_code; // operation code
 
@@ -211,7 +213,14 @@ class RiscvDesc : public MachineDesc {
     /*** regs for riscv standard call ***/
     void passParamReg(tac::Tac *t, int cnt);
     void getParamReg(tac::Tac *t, int cnt);
+    void fetchParamReg(tac::Tac *t, int order);
+    void setReturnValue(tac::Tac *t);
 
+    /* Auxiliary functions to simulate CISC instructions */
+    void emitPush(RiscvReg *);
+    void emitPop(RiscvReg*);
+    void emitSaveReg(tac::Tac* );
+    void emitRevertReg(tac::Tac*);
 };
 
 } // namespace assembly

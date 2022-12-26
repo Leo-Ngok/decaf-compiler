@@ -71,7 +71,7 @@ BasicBlock::BasicBlock(void) {
 void BasicBlock::dump(std::ostream &os) {
     os << "===============================================" << std::endl;
     // prints the basic information
-    os << "* BASICK BLOCK " << bb_num << ": " << std::endl;
+    os << "* BASIC BLOCK " << bb_num << ": " << std::endl;
     os << "*   Def     = " << Def << std::endl;
     os << "*   LiveUse = " << LiveUse << std::endl;
     os << "*   LiveIn  = " << LiveIn << std::endl;
@@ -156,7 +156,7 @@ static int markBasicBlocks(Tac *t) {
                 if (NULL != t->next)
                     t->next->prev = t->prev;
 
-            } else {
+            } else { // only possible when it is a function.
                 // target label: starts a new basic block
                 if (!at_start) {
                     ++index;

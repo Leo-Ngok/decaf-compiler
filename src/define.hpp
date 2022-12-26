@@ -93,7 +93,7 @@ class VarRef;
 class WhileStmt;
 class CompStmt;
 class FuncOrGlobal;
-
+class FuncRef;
 // the lists are not ASTNode
 typedef util::List<FuncDefn *> FuncList;        // list of Function
 typedef util::List<VarDecl *> VarList;          // list of VarDecl

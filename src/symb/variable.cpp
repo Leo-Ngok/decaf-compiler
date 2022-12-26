@@ -114,3 +114,9 @@ void Variable::attachTemp(tac::Temp v) {
  *   the attached register object
  */
 Temp Variable::getTemp(void) { return attached; }
+
+void Variable::rename(std::string new_name, int order) {
+    mind_assert(is_parameter);
+    mind_assert(this->order == order);
+    name = new_name;
+}

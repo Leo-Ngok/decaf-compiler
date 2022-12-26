@@ -482,6 +482,21 @@ void TransHelper::genMarkLabel(Label label) { chainUp(Tac::Mark(label)); }
  */
 void TransHelper::genMemo(const char *comment) { chainUp(Tac::Memo(comment)); }
 
+
+
+void TransHelper::genSaveArg(int order, Temp src) {
+    chainUp(Tac::SaveArg(src, order));
+
+}
+void TransHelper::genFetchArg(Temp dest, int order) {
+    chainUp(Tac::FetchArg(dest, order));
+}
+
+Temp TransHelper::genCall(Label foo) {
+    Temp dest = getNewTempI4();
+    chainUp(Tac::Call(dest, foo));
+    return dest;
+}
 /* Retrieves the entire Piece list.
  *
  * RETURNS:

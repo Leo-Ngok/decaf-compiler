@@ -512,6 +512,27 @@ Tac *Tac::JZero(Label dest, Temp cond) {
     return t;
 }
 
+Tac * Tac::SaveArg(Temp src, int order) {
+    Tac *t = allocateNewTac(Tac::SAVEARG);
+    t->mark = order;
+    t->op0.var = src;
+    return t;
+}
+
+Tac* Tac::FetchArg(Temp dest, int order) {
+    Tac *t = allocateNewTac(Tac::FETCHARG);
+    t->mark = order;
+    t->op0.var = dest;
+    return t;
+}
+
+Tac * Tac::Call(Temp dest, Label foo) {
+    Tac *t = allocateNewTac(Tac::CALL);
+    t->op0.var = dest;
+    t->op1.label = foo;
+    return t;
+}
+
 /* Creates a Push tac.
  *
  * NOTE:
@@ -746,7 +767,15 @@ void Tac::dump(std::ostream &os) {
     case LOAD_IMM4:
         os << "    " << op0.var << " <- " << op1.ival;
         break;
-
+    case CALL:
+        os << "    " << op0.var << " <- call " << op1.label;
+        break;
+    case SAVEARG:
+        os << "    save_arg " << mark << ", " << op0.var ;
+        break;
+    case FETCHARG:
+        os << "    fetch_arg " << op0.var << ", " << mark ;
+        break;
     default:
         mind_assert(false); // unreachable
         break;

@@ -55,10 +55,11 @@ void Translation::visit(ast::Program *p) {
  */
 void Translation::visit(ast::FuncDefn *f) {
     Function *fun = f->ATTR(sym);
-
     // attaching function entry label
     fun->attachEntryLabel(tr->getNewEntryLabel(fun));
-
+    
+    if(f->forward_decl)
+        return;
     // arguments
     int order = 0;
     for (auto it = f->formals->begin(); it != f->formals->end(); ++it) {
@@ -72,8 +73,12 @@ void Translation::visit(ast::FuncDefn *f) {
     RESET_OFFSET();
 
     tr->startFunc(fun);
-
+    
     // You may process params here, i.e use reg or stack to pass parameters
+    for (auto it = f->formals->begin(); it != f->formals->end(); ++it) {
+        auto v = (*it)->ATTR(sym);
+        tr->genFetchArg(v->getTemp(), v->getOrder());
+    }
 
 
     // translates statement by statement
@@ -84,7 +89,17 @@ void Translation::visit(ast::FuncDefn *f) {
 
     tr->endFunc();
 }
-#include <iostream>
+void Translation::visit(ast::FuncRef *s) {
+    for(auto it = s->args->begin(); it != s->args->end(); ++it) {
+        (*it)->accept(this);
+    }
+    int total_args = s->args->length();
+    int j = total_args-1;
+    for(auto rit = s->args->rbegin(); rit != s->args->rend(); ++rit,--j) {
+            tr->genSaveArg(j, (*rit)->ATTR(val));
+    }
+    s->ATTR(val) = tr->genCall(s->ATTR(sym)->getEntryLabel());
+}
 /* Translating an ast::AssignStmt node.
  *
  * NOTE:

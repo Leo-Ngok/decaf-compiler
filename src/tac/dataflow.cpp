@@ -76,7 +76,15 @@ void BasicBlock::computeDefAndLiveUse(void) {
         case Tac::PUSH:
             updateLU(t->op0.var);
             break;
-
+        case Tac::SAVEARG: // Prepare args for function call
+            updateLU(t->op0.var); // Refer to tac.cpp, we save op0 as the source temporary.
+            break;
+        case Tac::FETCHARG: // fetch args for function
+            updateDEF(t->op0.var);
+            break;
+        case Tac::CALL:
+            updateDEF(t->op0.var); // T := foo(...) is definition
+            break;
         default:
             mind_assert(false); // MARK, MEMO, JUMP, JZERO and RETURN will not
                                 // appear inside
@@ -183,7 +191,7 @@ void BasicBlock::analyzeLiveness(void) {
     t->LiveOut = LiveOut->clone();
     if (end_kind == BY_JZERO || end_kind == BY_RETURN)
         t->LiveOut->add(var);
-
+    // Start from statement prior to jump or return.
     for (t = t->prev; t != NULL; t = t->prev) {
         t->LiveOut = t->next->LiveOut->clone();
         t_next = t->next;
@@ -219,11 +227,14 @@ void BasicBlock::analyzeLiveness(void) {
 
         case Tac::POP:
         case Tac::LOAD_IMM4:
+        case Tac::FETCHARG:
+        case Tac::CALL:
             if (NULL != t_next->op0.var)
                 t->LiveOut->remove(t_next->op0.var);
             break;
 
         case Tac::PUSH:
+        case Tac::SAVEARG:
             t->LiveOut->add(t_next->op0.var);
             break;
 

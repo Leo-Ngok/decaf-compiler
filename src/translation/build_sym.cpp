@@ -90,10 +90,45 @@ void SemPass1::visit(ast::FuncDefn *fdef) {
     // 2,3). if DeclConflictError occurs, we don't put the symbol into the
     // symbol table
     Symbol *sym = scopes->lookup(fdef->name, fdef->getLocation(), false);
-    if (NULL != sym)
-        issue(fdef->getLocation(), new DeclConflictError(fdef->name, sym));
-    else
-        scopes->declare(f);
+    if (NULL != sym) {
+        scopes->open(f->getAssociatedScope());
+        // adds the parameters
+        for (ast::VarList::iterator it = fdef->formals->begin();
+         it != fdef->formals->end(); ++it) {
+            (*it)->accept(this);
+            f->appendParameter((*it)->ATTR(sym));
+        }
+        scopes->close();
+        // multiple declaration should have same signature.
+        if(!f->getType()->compatible(sym->getType())) {
+            issue(fdef->getLocation(), new DeclConflictError(fdef->name, sym));
+            return;
+        }
+        if(fdef->forward_decl) {
+            return;
+        }
+        Function* fsym = (Function*)sym;
+        // no multiple definition
+        if(fsym->hasDefinition()) {
+            issue(fdef->getLocation(), new DeclConflictError(fdef->name, sym));
+            return;
+        }
+        scopes->open(fsym->getAssociatedScope());
+        // change the name of parameters
+        for(auto pit = fsym->getAssociatedScope()->begin(), curr_pit = f->getAssociatedScope()->begin();
+        curr_pit != f->getAssociatedScope()->end() && pit != fsym->getAssociatedScope()->end();++curr_pit, ++pit) {
+            ((Variable*)(*pit))->rename((*curr_pit)->getName(), (*curr_pit)->getOrder());
+        }
+        // adds the local variables
+        for (auto it = fdef->stmts->begin(); it != fdef->stmts->end(); ++it)
+            (*it)->accept(this);
+        fsym->Define();
+        scopes->close();
+        return;
+    }
+        
+    
+    scopes->declare(f);
 
     // opens function scope
     scopes->open(f->getAssociatedScope());
@@ -108,7 +143,10 @@ void SemPass1::visit(ast::FuncDefn *fdef) {
     // adds the local variables
     for (auto it = fdef->stmts->begin(); it != fdef->stmts->end(); ++it)
         (*it)->accept(this);
-
+    // mark as defined if contains definition
+    if(!fdef->forward_decl) {
+        f->Define();
+    }
     // closes function scope
     scopes->close();
 }
@@ -149,7 +187,7 @@ void SemPass1::visit(ast::CompStmt *c) {
     // closes function scope
     scopes->close();
 }
-#include <iostream>
+
 /* Visiting an ast::VarDecl node.
  *
  * NOTE:

@@ -39,6 +39,8 @@ class ScopeStack {
     symb::Symbol *lookup(std::string id, Location *loc, bool through = true);
     // Declares a symbol in the current scope
     void declare(symb::Symbol *s);
+    // Remove a symbol from current scope
+    void cancel(symb::Symbol *s);
     // Opens a scope
     void open(Scope *s);
     // Closes the current scope

@@ -101,6 +101,7 @@ class Variable : public Symbol {
     void attachTemp(tac::Temp);
     // Gets the attached register object
     tac::Temp getTemp(void);
+    void rename(std::string new_name, int order);
 };
 
 /* Function Definition.
@@ -113,7 +114,7 @@ class Function : public Symbol {
     tac::Label entry;
     // the associated Functy object
     tac::Functy attached;
-
+    bool hasDefined;
   public:
     // Constructor
     Function(std::string n, type::Type *resType, Location *l);
@@ -141,6 +142,9 @@ class Function : public Symbol {
     void attachEntryLabel(tac::Label);
     // Gets the entry label of this function
     tac::Label getEntryLabel(void);
+
+    void Define(void);
+    bool hasDefinition() const;
 };
 
 } // namespace symb

@@ -167,7 +167,7 @@ void SyntaxError::printTo(std::ostream &os) { os << msg; }
  */
 BadArgCountError::BadArgCountError(Function *f) {
     fn_name = f->getName();
-    arg_count = f->getType()->numOfParameters() - 1;
+    arg_count = f->getType()->numOfParameters() ;//- 1;
 }
 
 // "wrong number of actual parameters for 'foo': 3 expected"

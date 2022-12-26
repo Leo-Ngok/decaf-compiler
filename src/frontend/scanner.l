@@ -104,7 +104,7 @@ IDENTIFIER    ([A-Za-z][_0-9A-Za-z]*)
 "continue"    { return yy::parser::make_CONTINUE(loc);     }
 "?"          { return yy::parser::make_QUESTION (loc);       }
 ":"          { return yy::parser::make_COLON (loc);       }
-
+","           { return yy::parser::make_COMMA(loc);       }
 {INTEGER}     {return make_ICONST(yytext, loc);}
 
 {IDENTIFIER}  {return yy::parser::make_IDENTIFIER (yytext, loc); }

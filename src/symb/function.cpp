@@ -38,6 +38,7 @@ Function::Function(std::string n, Type *resType, Location *l) {
     associated = new FuncScope(this);
     attached = NULL;
     entry = NULL;
+    hasDefined = false;
 }
 
 /* Gets the associated function scope.
@@ -142,3 +143,20 @@ Label Function::getEntryLabel(void) { return entry; }
  *   the attached Functy object
  */
 Functy Function::getFuncty(void) { return attached; }
+
+/* Mark the function symbol as defined to prevent multiple definitions.
+ *
+ * PARAMETERS:
+ *   f     - the Functy object
+ */
+void Function::Define(void) {
+    hasDefined = true;
+}
+/* Tests whether this symbol has definition associated with it.
+ *
+ * RETURNS:
+ *   true if there is definition associated with it.
+ */
+bool Function::hasDefinition() const {
+    return hasDefined;
+}

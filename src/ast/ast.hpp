@@ -35,22 +35,26 @@ class ASTNode {
         ASSIGN_EXPR,
         BOOL_CONST,
         BIT_NOT_EXPR,
+
         BOOL_TYPE,
         BREAK_STMT,
-        CONTINUE_STMT,
         CALL_EXPR,
         COMP_STMT,
+        CONTINUE_STMT,
         DIV_EXPR,
+
         EQU_EXPR,
         EMPTY_STMT,
         EXPR_STMT,
         FUNC_DEFN,
         GEQ_EXPR,
+
         GRT_EXPR,
         IF_STMT,
         IF_EXPR,
         INT_CONST,
         INT_TYPE,
+
         LEQ_EXPR,
         LES_EXPR,
         LVALUE_EXPR,
@@ -60,6 +64,7 @@ class ASTNode {
         NEQ_EXPR,
         NOT_EXPR,
         OR_EXPR,
+
         PROGRAM,
         RETURN_STMT,
         SUB_EXPR,
@@ -67,6 +72,7 @@ class ASTNode {
         VAR_REF,
         WHILE_STMT,
         FOD,
+        FUNC_REF,
     } NodeType;
 
   protected:
@@ -749,6 +755,22 @@ class BitNotExpr : public Expr {
   public:
     Expr *e;
 };
+
+/* Node representing a function invokation.
+ *
+ * SERIALIZED FORM:
+ *   (IDENTIFIER LPAREN ExprList RPAREN)
+ */
+class FuncRef : public Expr {
+  public:
+    FuncRef(std::string, ExprList *, Location *);
+    virtual void accept(Visitor *);
+    virtual void dumpTo(std::ostream &);
+    ExprList* args;
+    std::string name;
+    symb::Function *ATTR(sym);
+};
+
 extern bool print_decorated_ast;
 } // namespace ast
 } // namespace mind

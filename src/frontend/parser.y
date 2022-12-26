@@ -91,7 +91,8 @@ void scan_end();
 %token <std::string> IDENTIFIER "identifier"
 %token<int> ICONST "iconst"
 %nterm<mind::ast::StmtList*> StmtList
-%nterm<mind::ast::VarList* > FormalList 
+%nterm<mind::ast::VarList* > FormalList FormalListPrefix
+%nterm<mind::ast::ExprList* > ExprList ExprListPrefix
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
@@ -139,7 +140,25 @@ FuncDefn : Type IDENTIFIER LPAREN FormalList RPAREN LBRACE StmtList RBRACE {
           }
 FormalList :  /* EMPTY */
             {$$ = new ast::VarList();} 
-
+            /*| Type IDENTIFIER 
+            {
+                $$ = new ast::VarList();
+                $$->append(new ast::VarDecl($2, $1, POS(@2)));
+            }*/
+            | FormalListPrefix Type IDENTIFIER
+            { 
+                $1->append(new ast::VarDecl($3, $2, POS(@3))); 
+                $$ = $1;
+            }
+FormalListPrefix: FormalListPrefix Type IDENTIFIER COMMA
+            {
+                $1->append(new ast::VarDecl($3, $2, POS(@3)));
+                $$ = $1;
+            }
+            |
+            {
+                $$ = new ast::VarList();
+            }
 Type        : INT
                 { $$ = new ast::IntType(POS(@1)); }
 StmtList    : /* empty */
@@ -264,6 +283,8 @@ Expr        : ICONST
                 { $$ = $1; }
             | Lvalue ASSIGN Expr
                 { $$ = new ast::AssignExpr($1, $3, POS(@2)); }
+            | IDENTIFIER LPAREN ExprList RPAREN
+                { $$ = new ast::FuncRef($1, $3, POS(@1)); }
             ;
 NExpr       : Expr
                 { $$ = $1; }
@@ -290,6 +311,25 @@ Lvalue      : IDENTIFIER
 LvalueExpr  : Lvalue
                 { $$ = new ast::LvalueExpr($1, POS(@1)); }
             ;
+ExprList    : ExprListPrefix Expr 
+                { 
+                    $1->append($2);
+                    $$ = $1;
+                }
+            | /* Empty*/
+                {
+                    $$ = new ast::ExprList();
+                }
+            ;
+ExprListPrefix: ExprListPrefix Expr COMMA 
+            {
+                $1->append($2);
+                $$= $1;
+            }
+            | 
+            {
+                $$ = new ast::ExprList();
+            }
 %%
 
 /* SECTION IV: customized section */
