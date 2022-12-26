@@ -497,6 +497,39 @@ Temp TransHelper::genCall(Label foo) {
     chainUp(Tac::Call(dest, foo));
     return dest;
 }
+
+void TransHelper::genGlobl(symb::Variable *v) {
+    // TODO: refer to startfunc and endfunc.
+    mind_assert(NULL != v);
+    Label l = getNewLabel();
+    l->str_form = v->getName();
+    // adjust the end of the piece list.
+    ptail->next = new Piece();
+    ptail = ptail->next;
+    ptail->kind = Piece::GLOBL;
+    ptail->as.globl = new GloblObject();
+    ptail->as.globl->symb_name = l;
+    if(v->getType()->isBaseType()) {
+        ptail->as.globl->payload = new PayLoad(); 
+        ptail->as.globl->payload
+        ->size = v->getGlobalInit();
+        ptail->as.globl->payload
+        ->payload_type = PayLoad::DATA;
+        
+    }
+}
+
+
+Temp TransHelper::genLoadGSym(symb::Variable *v, ...) {
+    // TODO
+    Temp dest = getNewTempI4();
+    chainUp(Tac::LoadGSym(dest, v->getName()));
+    return dest;
+}
+void TransHelper::genSaveGSym(symb::Variable *v, Temp src, ...) {
+    // TODO
+    chainUp(Tac::SaveGSym(v->getName(), src));
+}
 /* Retrieves the entire Piece list.
  *
  * RETURNS:

@@ -48,7 +48,8 @@ std::ostream &operator<<(std::ostream &, tac::Temp);
 std::ostream &operator<<(std::ostream &, tac::Label);
 std::ostream &operator<<(std::ostream &, tac::VTable);
 std::ostream &operator<<(std::ostream &, tac::Functy);
-
+std::ostream &operator<<(std::ostream &, tac::Globl); 
+std::ostream &operator<<(std::ostream &, tac::PayLoad *);
 /* Output Indentation */
 void newLine(std::ostream &);
 void incIndent(std::ostream &);

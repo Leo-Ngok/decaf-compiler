@@ -20,7 +20,7 @@ namespace tac {
 /** Translation helper.
  *
  *  We use a helper to generate Tac's instead of calling the
- *  creationg functions in Tac.
+ *  creating functions in Tac.
  */
 class TransHelper {
   public:
@@ -73,7 +73,10 @@ class TransHelper {
     Temp genLoadImm4(int);
     void genMarkLabel(Label);
     void genMemo(const char *);
-
+    // Global symbols
+    void genGlobl(symb::Variable*);
+    Temp genLoadGSym(symb::Variable*, ...);
+    void genSaveGSym(symb::Variable*, Temp, ...);
     // gets the entire Piece list
     Piece *getPiece();
 

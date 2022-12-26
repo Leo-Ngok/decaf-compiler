@@ -38,9 +38,17 @@ Translation::Translation(tac::TransHelper *helper) {
 /* Translating an ast::Program node.
  */
 void Translation::visit(ast::Program *p) {
+    
     for (auto it = p->func_and_globals->begin();
          it != p->func_and_globals->end(); ++it)
-        (*it)->accept(this);
+         if((*it)->getKind() == ast::ASTNode::FUNC_DEFN) {
+            (*it)->accept(this);
+         }
+    for (auto it = p->func_and_globals->begin();
+         it != p->func_and_globals->end(); ++it)
+         if((*it)->getKind() == ast::ASTNode::VAR_DECL) {
+            (*it)->accept(this);
+         }
 }
 
 // three sugars for parameter offset management
@@ -109,11 +117,16 @@ void Translation::visit(ast::AssignExpr *s) {
     // TODO
     s->e->accept(this);
     s->left->accept(this);
+    s->ATTR(val) = s->e->ATTR(val);//lvar->ATTR(sym)->getTemp();
     switch(s->left->ATTR(lv_kind)){
     case s->left->SIMPLE_VAR: {
         ast::VarRef* lvar = (ast::VarRef*) s->left;
-        s->ATTR(val) = lvar->ATTR(sym)->getTemp();
-        tr->genAssign(lvar->ATTR(sym)->getTemp(), s->e->ATTR(val));
+        if(lvar->ATTR(sym)->isGlobalVar()) {
+            tr->genSaveGSym(lvar->ATTR(sym),s->e->ATTR(val));
+        } else {
+            tr->genAssign(lvar->ATTR(sym)->getTemp(), s->e->ATTR(val));
+        }
+        
         break;
     }
     default: break;
@@ -361,6 +374,9 @@ void Translation::visit(ast::LvalueExpr *e) {
     switch (e->lvalue->ATTR(lv_kind))
     {
     case e->lvalue->SIMPLE_VAR:
+        if(( (ast::VarRef *) e->lvalue)->ATTR(sym)->isGlobalVar()) {
+        e->ATTR(val) = tr->genLoadGSym(((ast::VarRef *) e->lvalue)->ATTR(sym));
+        } else
         e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
         break;
     
@@ -391,6 +407,10 @@ void Translation::visit(ast::VarRef *ref) {
 /* Translating an ast::VarDecl node.
  */
 void Translation::visit(ast::VarDecl *decl) {
+    if(decl->ATTR(sym)->isGlobalVar()) {
+        tr->genGlobl(decl->ATTR(sym));
+        return;
+    }
     Temp var = tr->getNewTempI4();
     decl->ATTR(sym)->attachTemp(var);
     if(decl->init != NULL) {

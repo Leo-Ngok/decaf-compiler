@@ -116,7 +116,8 @@ typedef struct TempObject *Temp;
 typedef struct LabelObject *Label;
 typedef struct VTableObject *VTable;
 typedef struct FunctyObject *Functy;
-
+typedef struct GloblObject *Globl;
+struct PayLoad;
 struct Tac;
 struct Piece;
 } // namespace tac

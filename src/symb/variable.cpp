@@ -115,6 +115,10 @@ void Variable::attachTemp(tac::Temp v) {
  */
 Temp Variable::getTemp(void) { return attached; }
 
+/**
+ * Utility function for defining functions, given 
+ * previous declarations provided.
+*/
 void Variable::rename(std::string new_name, int order) {
     mind_assert(is_parameter);
     mind_assert(this->order == order);

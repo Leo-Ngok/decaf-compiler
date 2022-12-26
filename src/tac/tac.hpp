@@ -57,6 +57,26 @@ typedef struct FunctyObject {
     Tac *code;           // tac chain of the function
 } * Functy;
 
+
+typedef struct GloblObject {
+    Label symb_name;  // name of symbol
+    PayLoad * payload; // data associated with this symbol.
+} * Globl;
+
+
+struct PayLoad {
+    typedef enum {
+        DATA, PADDING
+    } PLType;
+    size_t size;
+    PLType payload_type;
+    PayLoad * next;
+};
+
+/** Representation of a global symbol
+ * 
+*/
+
 /** Three address code.
  *
  *  NOTE: We use "struct" instead of "class" here for your convenience.
@@ -97,6 +117,8 @@ struct Tac {
         CALL,
         SAVEARG,
         FETCHARG,
+        SAVEGLOBAL,
+        FETCHGLOBAL,
     } Kind;
 
     // Operand type
@@ -149,8 +171,10 @@ struct Tac {
     static Tac *Mark(Label label);
     static Tac *Memo(const char *);
     static Tac *Call(Temp dest, Label foo);
-    static Tac *SaveArg(Temp arg, int order);
-    static Tac *FetchArg(Temp arg, int order);
+    static Tac *SaveArg(Temp src, int order);
+    static Tac *FetchArg(Temp dest, int order);
+    static Tac *LoadGSym(Temp dest, std::string src_sym_name);
+    static Tac *SaveGSym(std::string dest_sym_name, Temp src);
     // dumps a single tac node to some output stream
     void dump(std::ostream &);
 };
@@ -169,11 +193,13 @@ struct Piece {
     // kind of this Piece node
     enum {
         FUNCTY,
+        GLOBL,
     } kind;
 
     // data of this Piece node
     union {
         Functy functy;
+        Globl globl;
     } as;
 
     // next Piece node

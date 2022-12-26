@@ -604,6 +604,20 @@ Tac *Tac::Mark(Label label) {
     return t;
 }
 
+Tac * Tac::LoadGSym(Temp dest, std::string src_sym_name) {
+    Tac *t = allocateNewTac(Tac::FETCHGLOBAL);
+    t->op1.name = src_sym_name;
+    t->op0.var = dest;
+    return t;
+}
+
+Tac* Tac::SaveGSym(std::string dest_sym_name, Temp src) {
+    Tac *t = allocateNewTac(Tac::SAVEGLOBAL);
+    t->op0.name = dest_sym_name;
+    t->op1.var = src;
+    return t;
+}
+
 /* Outputs a temporary variable.
  *
  * PARAMETERS:
@@ -645,6 +659,27 @@ std::ostream &mind::operator<<(std::ostream &os, Functy f) {
     return os;
 }
 
+std::ostream &mind::operator<<(std::ostream &os, Globl g) {
+    os << g->symb_name << ":" << std::endl;
+    for (PayLoad *p = g->payload; p != NULL; p = p->next)
+        os << p;
+    return os;
+}
+
+std::ostream &mind::operator<<(std::ostream &os, PayLoad *pyl){
+    switch(pyl->payload_type) {
+        case PayLoad::DATA:
+            os << "    .DATA    ";
+            break;
+        case PayLoad::PADDING:
+            os << "    .OFFSET  ";
+            break;
+        default:
+            mind_assert(false);
+    }
+    os << pyl->size;
+    return os;
+}
 /* Dumps the Tac node to an output stream.
  *
  * PARAMETERS:
@@ -776,6 +811,12 @@ void Tac::dump(std::ostream &os) {
     case FETCHARG:
         os << "    fetch_arg " << op0.var << ", " << mark ;
         break;
+    case SAVEGLOBAL:
+        os << "    save_global_symbol " << op0.name << ", " << op1.var;
+        break;
+    case FETCHGLOBAL:
+        os << "    load_global_symbol " << op0.var << ", " << op1.name;
+        break;
     default:
         mind_assert(false); // unreachable
         break;
@@ -789,8 +830,15 @@ void Tac::dump(std::ostream &os) {
  */
 void Piece::dump(std::ostream &os) {
     for (Piece *p = this; p != NULL; p = p->next) {
-        if (FUNCTY == p->kind)
+        switch(p->kind) {
+            case FUNCTY:
             os << p->as.functy << std::endl;
+            break;
+        case GLOBL:
+        os << p->as.globl << std::endl;
+        break;
+        }
+            
     }
 }
 

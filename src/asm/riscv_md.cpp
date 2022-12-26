@@ -110,7 +110,7 @@ void RiscvDesc::emitPieces(scope::GlobalScope *gscope, Piece *ps,
     _result = &os;
     // output to .data and .bss segment
     std::ostringstream _data, _bss;
-
+    
     if (Option::getLevel() == Option::ASMGEN) {
         // program preamble
         emit(EMPTY_STR, ".text", NULL);
@@ -124,7 +124,9 @@ void RiscvDesc::emitPieces(scope::GlobalScope *gscope, Piece *ps,
         case Piece::FUNCTY:
             emitFuncty(ps->as.functy);
             break;
-
+        case Piece::GLOBL:
+            emitGlobalSymbols(ps->as.globl);
+            break;
         default:
             mind_assert(false); // unreachable
             break;
@@ -132,6 +134,38 @@ void RiscvDesc::emitPieces(scope::GlobalScope *gscope, Piece *ps,
 
         ps = ps->next;
     }
+
+}
+
+void RiscvDesc::emitGlobalSymbols(Globl globl) {
+    if (Option::getLevel() != Option::ASMGEN) {
+        return;
+    }
+    emit(EMPTY_STR, ".data", NULL);
+    std::ostringstream oss;
+    oss << ".globl " << globl->symb_name->str_form;
+    emit(EMPTY_STR, oss.str().c_str(), NULL);
+    emit(globl->symb_name->str_form,NULL, NULL);
+    for(auto pyl = globl->payload; pyl; pyl = pyl->next) {
+        emitPayload(pyl);
+    }
+}
+
+void RiscvDesc::emitPayload(PayLoad* pyl) {
+    std::ostringstream oss;
+    switch(pyl->payload_type) {
+        case PayLoad::DATA:
+        oss << ".word ";
+        
+        break;
+        case PayLoad::PADDING:
+        oss << ".zero ";
+        break;
+        default:
+        break;
+    }
+    oss << pyl->size;
+    emit(EMPTY_STR, oss.str().c_str(), NULL);
 }
 
 /* Allocates a new label (for a basic block).
@@ -278,6 +312,12 @@ void RiscvDesc::emitTac(Tac *t) {
     case Tac::FETCHARG:
         fetchParamReg(t, t->mark);
         break;
+    case Tac::FETCHGLOBAL:
+        emitLoadSym(t);
+        break;
+    case Tac::SAVEGLOBAL:
+        emitSaveSym(t);
+        break;
     case Tac::CALL:
         spillDirtyRegs(t->LiveOut);
         addInstr(RiscvInstr::CALL, NULL, NULL, NULL, 0,
@@ -290,6 +330,19 @@ void RiscvDesc::emitTac(Tac *t) {
     }
 }
 
+void RiscvDesc::emitLoadSym(Tac *t){
+    if (!t->LiveOut->contains(t->op0.var))
+        return;
+    int r0 = getRegForWrite(t->op0.var, 0, 0, t->LiveOut);
+    addInstr(RiscvInstr::LA, _reg[r0], NULL, NULL, 0, t->op1.name, NULL);
+    addInstr(RiscvInstr::LW, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);
+}
+void RiscvDesc::emitSaveSym(Tac *t) {
+    int r1 = getRegForRead(t->op1.var, 0, t->LiveOut);
+    int addr = selectRegToSpill(r1, 0, t->LiveOut);
+    addInstr(RiscvInstr::LA, _reg[addr], NULL, NULL, 0, t->op0.name, NULL);
+    addInstr(RiscvInstr::SW, _reg[r1], _reg[addr], NULL, 0, EMPTY_STR, NULL);
+}
 void RiscvDesc::setReturnValue(Tac *t) {
     // eliminates useless assignments
     if (!t->LiveOut->contains(t->op0.var))
@@ -696,6 +749,9 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
     case RiscvInstr::CALL:
         oss << "call" << "_" + i->l;
         break;
+    case RiscvInstr::LA:
+        oss << "la" << i->r0->name << ", " << i->l;
+        break;
     default:
         mind_assert(false); // other instructions not supported
     }
@@ -780,7 +836,10 @@ void RiscvDesc::addInstr(RiscvInstr::OpCode op_code, RiscvReg *r0, RiscvReg *r1,
 void RiscvDesc::simplePeephole(RiscvInstr *iseq) {
     // if you are interested in peephole optimization, you can implement here
     // of course, beyond our requirements
-    
+    if(iseq && iseq->op_code == RiscvInstr::MOVE && iseq->r0 == iseq->r1) {
+        iseq->cancelled = true;
+        return;
+    }
 }
 
 /******************* REGISTER ALLOCATOR ***********************/

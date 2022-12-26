@@ -216,12 +216,19 @@ void SemPass1::visit(ast::VarDecl *vdecl) {
     // 3. Declare the symbol in `scopes`
     else {
         scopes->declare(var);
-    }
-    // std::cerr << std::endl << "after declaration" << std::endl;
-    // scopes->top()->dump(std::cerr);
-    // std::cerr << std::endl << "end of after declaration" << std::endl;
-    // 4. Special processing for global variables
+    } // 4. Special processing for global variables
     // TODO: implement declaration support for global scope.
+    if(var->isGlobalVar() && vdecl->init != nullptr){
+        // We assume all global variable has constant initialization
+        
+        
+        if(vdecl->init->getKind() == ast::ASTNode::NodeType::INT_CONST) {
+            var->setGlobalInit(dynamic_cast<ast::IntConst *>(vdecl->init)->value);
+        } else {
+            issue(vdecl->getLocation(), new SyntaxError("initializer element is not constant"));
+        }
+        ;
+    }
     // 5. Tag the symbol to `vdecl->ATTR(sym)`
     
     vdecl->ATTR(sym) = var;

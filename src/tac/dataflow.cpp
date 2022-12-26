@@ -85,6 +85,12 @@ void BasicBlock::computeDefAndLiveUse(void) {
         case Tac::CALL:
             updateDEF(t->op0.var); // T := foo(...) is definition
             break;
+        case Tac::FETCHGLOBAL:
+            updateDEF(t->op0.var);
+            break;
+        case Tac::SAVEGLOBAL:
+            updateLU(t->op1.var);
+            break;
         default:
             mind_assert(false); // MARK, MEMO, JUMP, JZERO and RETURN will not
                                 // appear inside
@@ -228,6 +234,7 @@ void BasicBlock::analyzeLiveness(void) {
         case Tac::POP:
         case Tac::LOAD_IMM4:
         case Tac::FETCHARG:
+        case Tac::FETCHGLOBAL:
         case Tac::CALL:
             if (NULL != t_next->op0.var)
                 t->LiveOut->remove(t_next->op0.var);
@@ -237,7 +244,9 @@ void BasicBlock::analyzeLiveness(void) {
         case Tac::SAVEARG:
             t->LiveOut->add(t_next->op0.var);
             break;
-
+        case Tac::SAVEGLOBAL:
+            t->LiveOut->add(t_next->op1.var);
+            break;
         default:
             mind_assert(false); // MARK, MEMO, JUMP, JZERO and RETURN will not
                                 // appear inside

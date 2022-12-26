@@ -56,3 +56,5 @@ debug.sh
 mind.dSYM
 .vscode
 .vs
+
+minidecaf-tests/*

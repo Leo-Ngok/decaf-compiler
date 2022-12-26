@@ -115,6 +115,7 @@ struct RiscvInstr : public Instr {
         MOVE,
         CALL,
         ADDI,
+        LA,
         // You could add other instructions/pseudo instructions here
     } op_code; // operation code
 
@@ -187,8 +188,9 @@ class RiscvDesc : public MachineDesc {
     // appends a new instruction to "_tail"
     void addInstr(RiscvInstr::OpCode, RiscvReg *, RiscvReg *, RiscvReg *, int,
                   std::string, const char *);
-
-
+    /* Interaction with global symbols */
+    void emitLoadSym(tac::Tac *);
+    void emitSaveSym(tac::Tac *);
     /*** sketch for peephole optimizer (inside a basic block) ***/
     void simplePeephole(RiscvInstr *);
 
@@ -221,6 +223,10 @@ class RiscvDesc : public MachineDesc {
     void emitPop(RiscvReg*);
     void emitSaveReg(tac::Tac* );
     void emitRevertReg(tac::Tac*);
+
+    /* Global definitions */
+    void emitGlobalSymbols(tac::Globl globl);
+    void emitPayload(tac::PayLoad* pyl);
 };
 
 } // namespace assembly
