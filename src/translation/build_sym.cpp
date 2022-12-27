@@ -51,7 +51,7 @@ class SemPass1 : public ast::Visitor {
 void SemPass1::visit(ast::Program *prog) {
     prog->ATTR(gscope) = new GlobalScope();
     scopes->open(prog->ATTR(gscope));
-
+    
     // visit global variables and each function
     for (auto it = prog->func_and_globals->begin();
          it != prog->func_and_globals->end(); ++it) {
@@ -229,6 +229,9 @@ void SemPass1::visit(ast::VarDecl *vdecl) {
             issue(vdecl->getLocation(), new SyntaxError("initializer element is not constant"));
         }
         ;
+    }
+    if(var->isGlobalVar() && vdecl->initList != nullptr) {
+        var->setGlobalArrInit(vdecl->initList);
     }
     // 5. Tag the symbol to `vdecl->ATTR(sym)`
     

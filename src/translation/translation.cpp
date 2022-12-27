@@ -38,7 +38,7 @@ Translation::Translation(tac::TransHelper *helper) {
 /* Translating an ast::Program node.
  */
 void Translation::visit(ast::Program *p) {
-    
+    memset_label = tr->getNewLibEntryLabel("memset");
     for (auto it = p->func_and_globals->begin();
          it != p->func_and_globals->end(); ++it)
          if((*it)->getKind() == ast::ASTNode::FUNC_DEFN) {
@@ -403,12 +403,25 @@ void Translation::visit(ast::LvalueExpr *e) {
     e->lvalue->accept(this);
     switch (e->lvalue->ATTR(lv_kind))
     {
-    case e->lvalue->SIMPLE_VAR:
-        if(( (ast::VarRef *) e->lvalue)->ATTR(sym)->isGlobalVar()) {
-        e->ATTR(val) = tr->genLoadGSym(((ast::VarRef *) e->lvalue)->ATTR(sym));
+    case e->lvalue->SIMPLE_VAR:{
+        Variable* v = (Variable*) ((ast::VarRef *) e->lvalue)->ATTR(sym);
+        if(v->isGlobalVar()) {
+            //if((ast::VarRef *) e->lvalue)->ATTR(sym)->gett)
+            Type* var_type = ((ast::VarRef*) e->lvalue)->ATTR(type); 
+            if(var_type->isBaseType()){
+                e->ATTR(val) = tr->genLoadGSym(((ast::VarRef *) e->lvalue)->ATTR(sym));
+            } 
+            else if(var_type->isArrayType()) {
+                e->ATTR(val) = tr->genLoadGAddr(((ast::VarRef *) e->lvalue)->ATTR(sym));
+            }
+            else {
+                mind_assert(false);
+            }
+        
         } else
-        e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
+            e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
         break;
+    }
     case e->lvalue->ARRAY_ELE: {
         ast::ArrayRef * lvar = (ast::ArrayRef*) e->lvalue;
         for(auto it = lvar->ranklist->begin(); it != lvar->ranklist->end(); ++it) {
@@ -481,6 +494,26 @@ void Translation::visit(ast::VarDecl *decl) {
     } else if(decl->ATTR(sym)->getType()->isArrayType()) {
         ArrayType* at = (ArrayType*) decl->ATTR(sym)->getType();
         tr->genAlloc(var, at->getSize());
+        // TODO: put global initialization here.
+        // step 1: initialize array with zeros.
+        Temp t0 = var;
+        Temp t1 = tr->genLoadImm4(0);
+        Temp t2 = tr->genLoadImm4(((ArrayType*) decl->ATTR(sym)->getType())->getSize());
+        tr->genSaveArg(2, t2);
+        tr->genSaveArg(1, t1);
+        tr->genSaveArg(0, t0);
+        tr->genCall(memset_label);
+        // step 2: put optional list of arguments.
+        int init_index = 0;
+        if(decl->initList != nullptr) {
+            for(auto it = decl->initList->begin(); it != decl->initList->end(); ++it) {
+                Temp val = tr->genLoadImm4(*it);
+                Temp offset = tr->genLoadImm4(WORD_SIZE * init_index);
+                Temp setAddr = tr->genPtrAdd(var, offset);
+                tr->genSaveMem(setAddr, val);
+                init_index++;
+            }
+        }
     }
 
     // TODO

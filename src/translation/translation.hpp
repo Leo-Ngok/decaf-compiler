@@ -18,6 +18,7 @@
 namespace mind {
 
 class Translation : public ast::Visitor {
+  tac::Label memset_label;
   public:
     Translation(tac::TransHelper *);
 

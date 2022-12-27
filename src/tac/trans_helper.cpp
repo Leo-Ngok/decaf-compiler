@@ -37,6 +37,13 @@ void TransHelper::chainUp(Tac *t) {
     else
         tacs_tail = tacs_tail->next = t;
 }
+void TransHelper::chainUp(PayLoad *pyl){
+    if(NULL == payload_head) {
+        payload_tail = payload_head = pyl;
+    } else {
+        payload_tail = payload_tail->next = pyl;
+    }
+}
 
 /******************** public methods *********************/
 
@@ -116,6 +123,15 @@ Label TransHelper::getNewEntryLabel(Function *fn) {
     return l;
 }
 
+Label TransHelper::getNewLibEntryLabel(const char* name) {
+    std::string fn_name = name;
+    Label l = new LabelObject();
+    l->id = label_count++;
+    l->str_form = fn_name;
+    l->target = true; // such label is referenced by virtual tables
+
+    return l;
+}
 /* Creates a Memo tac about the function parameters.
  *
  * PARAMETERS:
@@ -506,24 +522,28 @@ void TransHelper::genGlobl(symb::Variable *v) {
     // adjust the end of the piece list.
     ptail->next = new Piece();
     ptail = ptail->next;
+
     ptail->kind = Piece::GLOBL;
     ptail->as.globl = new GloblObject();
     ptail->as.globl->symb_name = l;
+
+
+    payload_head = payload_tail = nullptr;
     if(v->getType()->isBaseType()) {
-        ptail->as.globl->payload = new PayLoad(); 
-        ptail->as.globl->payload
-        ->size = v->getGlobalInit();
-        ptail->as.globl->payload
-        ->payload_type = PayLoad::DATA;
+        chainUp(PayLoad::Data(v->getGlobalInit()));
         
     } else {
-        ptail->as.globl->payload = new PayLoad(); 
-        int sz = v->getType()->getSize();
-        ptail->as.globl->payload
-        ->size = sz;
-        ptail->as.globl->payload
-        ->payload_type = PayLoad::PADDING;
+        int init_size = 0;
+        if(v->getGlobalArrInit() != nullptr) {
+            for(auto it = v->getGlobalArrInit()->begin(); it != v->getGlobalArrInit()->end(); ++it) {    
+                chainUp(PayLoad::Data(*it));
+                init_size++;
+            }
+        }
+        int sz = v->getType()->getSize() - 4 * init_size;
+        chainUp(PayLoad::Padding(sz));
     }
+    ptail->as.globl->payload = payload_head;
 }
 
 

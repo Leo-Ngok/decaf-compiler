@@ -34,6 +34,7 @@ class TransHelper {
     Label getNewLabel(void);
     // allocates a new entry Label object for function
     Label getNewEntryLabel(symb::Function *);
+    Label getNewLibEntryLabel(const char*);
     // starts to translate a function
     void startFunc(symb::Function *);
     // ends translating a function
@@ -94,6 +95,7 @@ class TransHelper {
     Piece head, *ptail;
     // the Tac list of a function
     Tac *tacs, *tacs_tail;
+    PayLoad *payload_head, *payload_tail;
     // the current Function
     symb::Function *current;
     // counters for temporaries and labels (for their index)
@@ -103,6 +105,7 @@ class TransHelper {
 
     // appends a Tac to the Tac list
     void chainUp(Tac *);
+    void chainUp(PayLoad *);
     // gets a Memo about the Function object
     Tac *memoOf(symb::Function *);
 };

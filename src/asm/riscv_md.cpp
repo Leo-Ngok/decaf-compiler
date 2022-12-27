@@ -772,7 +772,16 @@ void RiscvDesc::emitInstr(RiscvInstr *i) {
         oss << "j" << i->l;
         break;
     case RiscvInstr::CALL:
-        oss << "call" << "_" + i->l;
+        if(i->l == std::string("memset")) {
+            oss << "call memset";
+        }
+        else if(i->l == std::string("putchar")) {
+            oss << "call putchar";
+        
+        } else {
+            oss << "call" << "_" + i->l;
+        }
+        
         break;
     case RiscvInstr::LA:
         oss << "la" << i->r0->name << ", " << i->l;

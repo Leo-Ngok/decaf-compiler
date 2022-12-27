@@ -191,6 +191,7 @@ class VarDecl : public Statement {
     VarDecl(std::string name, Type *type, int dim, Location *l);
 
     VarDecl(std::string name, Type *type, Expr *init, Location *l);
+    VarDecl(std::string name, Type* type, DimList *init_list, Location *l);
     virtual void accept(Visitor *);
     virtual void dumpTo(std::ostream &);
 
@@ -198,7 +199,7 @@ class VarDecl : public Statement {
     std::string name;
     Type *type;
     Expr *init;
-
+    DimList* initList;
     symb::Variable *ATTR(sym); // for semantic analysis
 };
 

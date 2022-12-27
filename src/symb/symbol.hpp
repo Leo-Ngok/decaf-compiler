@@ -77,7 +77,7 @@ class Variable : public Symbol {
     tac::Temp attached;
     // init value for global variable
     int global_init;
-
+    ast::DimList* global_array_init;
   public:
     // Constructor
     Variable(std::string n, type::Type *t, Location *l);
@@ -102,6 +102,8 @@ class Variable : public Symbol {
     // Gets the attached register object
     tac::Temp getTemp(void);
     void rename(std::string new_name, int order);
+    void setGlobalArrInit(ast::DimList * init_list);
+    ast::DimList * getGlobalArrInit() const;
 };
 
 /* Function Definition.

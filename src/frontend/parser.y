@@ -93,7 +93,7 @@ void scan_end();
 %nterm<mind::ast::StmtList*> StmtList
 %nterm<mind::ast::VarList* > FormalList FormalListPrefix
 %nterm<mind::ast::ExprList* > ExprList ExprListPrefix RankList
-%nterm<mind::ast::DimList* > IndexList
+%nterm<mind::ast::DimList* > IndexList InitList InitListPrefix NIndexList
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
@@ -161,10 +161,22 @@ FormalList :  /* EMPTY */
                 $1->append(new ast::VarDecl($3, $2, POS(@3))); 
                 $$ = $1;
             }
+            | FormalListPrefix Type IDENTIFIER NIndexList
+            {
+                ast::Type *resType = new ast::ArrayType($2, $4, POS(@2));
+                $1->append(new ast::VarDecl($3, resType, POS(@3))); 
+                $$ = $1;
+            }
             ;
 FormalListPrefix: FormalListPrefix Type IDENTIFIER COMMA
             {
                 $1->append(new ast::VarDecl($3, $2, POS(@3)));
+                $$ = $1;
+            }
+            | FormalListPrefix Type IDENTIFIER NIndexList COMMA
+            {
+                ast::Type *resType = new ast::ArrayType($2, $4, POS(@2));
+                $1->append(new ast::VarDecl($3, resType, POS(@3)));
                 $$ = $1;
             }
             |
@@ -326,7 +338,12 @@ VarDecl     : Type IDENTIFIER IndexList SEMICOLON
                     
                 }
             | Type IDENTIFIER ASSIGN Expr SEMICOLON
-                { $$ = new ast::VarDecl($2, $1, $4, POS(@1));}
+                { $$ = new ast::VarDecl($2, $1, $4, POS(@1)); }
+            | Type IDENTIFIER IndexList ASSIGN LBRACE InitList RBRACE SEMICOLON
+                { 
+                    ast::Type *resType = new ast::ArrayType($1, $3, POS(@3));
+                    $$ = new ast::VarDecl($2, resType, $6, POS(@1));
+                }
             ;
 Lvalue      : IDENTIFIER RankList
                 { 
@@ -372,6 +389,27 @@ RankList    : RankList LBRACK Expr RBRACK
             | 
                 { $$ = new ast::ExprList(); }
             ;
+InitListPrefix: InitListPrefix ICONST COMMA
+                { $1->append($2); $$ = $1; }
+            | 
+            {
+                $$ = new ast::DimList();
+            }
+InitList    : InitListPrefix ICONST 
+            {
+                $1->append($2);
+                $$ = $1;
+            }
+            ;
+NIndexList  : LBRACK RBRACK IndexList
+            {
+                $3->addAtHead(1);
+                $$ = $3;
+            }
+            | LBRACK ICONST RBRACK IndexList {
+                $4->addAtHead($2);
+                $$ = $4;
+            }
 %%
 
 /* SECTION IV: customized section */

@@ -358,16 +358,24 @@ void SemPass2::visit(ast::VarRef *ref) {
         issue(ref->getLocation(), new NotVariableError(v));
         goto issue_error_type;
 
-    } else if(!v->getType()->isBaseType()) {
-        issue(ref->getLocation(), new NotVariableError(v));
-        goto issue_error_type;
-    } 
+    } //else if(!v->getType()->isBaseType()) {
+        //issue(ref->getLocation(), new NotVariableError(v));
+        //goto issue_error_type;
+    //} 
     else {
-        ref->ATTR(type) = v->getType();
+        if(v->getType()->isBaseType())
+            ref->ATTR(type) = v->getType();
+        else if(v->getType()->isArrayType())
+            ref->ATTR(type) = v->getType();
+        else 
+            mind_assert(false);
         ref->ATTR(sym) = (Variable *)v;
 
         if (((Variable *)v)->isLocalVar()) {
+            if(v->getType()->isBaseType())
             ref->ATTR(lv_kind) = ast::Lvalue::SIMPLE_VAR;
+            //else if(v->getType()->isArrayType())
+            //ref->ATTR(lv_kind) = ast::Lvalue::ARRAY_ELE;
         }
     }
 
@@ -588,7 +596,8 @@ success:
     auto aargit = actual_args->begin();
     while(fargit != formal_args->end()) {
         (*aargit)->accept(this);
-        if(!(*fargit)->compatible(((*aargit)->ATTR(type)))) {
+        if(!(*fargit)->compatible(((*aargit)->ATTR(type))) &&
+        !((*fargit)->isArrayType() && (*aargit)->ATTR(type)->isArrayType())) {
             issue((*aargit)->getLocation(), new UnexpectedTypeError(
                 (*aargit)->ATTR(type), *fargit
             ));

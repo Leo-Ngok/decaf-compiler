@@ -70,7 +70,10 @@ struct PayLoad {
     } PLType;
     int size;
     PLType payload_type;
+    PayLoad * prev;
     PayLoad * next;
+    static PayLoad* Data(int value);
+    static PayLoad* Padding(int size);
 };
 
 /** Representation of a global symbol

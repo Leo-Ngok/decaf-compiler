@@ -37,6 +37,19 @@ static Tac *allocateNewTac(Tac::Kind code) {
     return t;
 }
 
+
+PayLoad* PayLoad::Data(int value) {
+    PayLoad * pyl = new PayLoad();
+    pyl->payload_type = PayLoad::DATA;
+    pyl->size = value;
+    return pyl;
+}
+PayLoad* PayLoad::Padding(int size) {
+    PayLoad * pyl = new PayLoad();
+    pyl->payload_type = PayLoad::PADDING;
+    pyl->size = size;
+    return pyl;
+}
 /* Creates a Memo tac.
  *
  * NOTE:
@@ -724,7 +737,7 @@ std::ostream &mind::operator<<(std::ostream &os, PayLoad *pyl){
         default:
             mind_assert(false);
     }
-    os << pyl->size;
+    os << pyl->size << std::endl;
     return os;
 }
 /* Dumps the Tac node to an output stream.
@@ -861,9 +874,15 @@ void Tac::dump(std::ostream &os) {
     case SAVEGLOBAL:
         os << "    save_global_symbol " << op0.name << ", " << op1.var;
         break;
-    case FETCHGLOBAL:
-        os << "    load_global_symbol " << op0.var << ", " << op1.name;
+    case FETCHGLOBAL: {
+        if(mark == -1) {
+            os << "    load_global_address " << op0.var << ", " << op1.name;
+        } else {
+            os << "    load_global_symbol " << op0.var << ", " << op1.name;
+        }
         break;
+    }
+        
     case ALLOC:
         os << "    allocate " << op0.var << ", " << op1.size;
         break;

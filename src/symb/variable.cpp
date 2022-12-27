@@ -31,6 +31,7 @@ Variable::Variable(std::string n, Type *t, Location *l) {
 
     is_parameter = false;
     global_init = 0;
+    global_array_init = nullptr;
     attached = NULL;
 
     mark = 0;
@@ -123,4 +124,12 @@ void Variable::rename(std::string new_name, int order) {
     mind_assert(is_parameter);
     mind_assert(this->order == order);
     name = new_name;
+}
+
+void Variable::setGlobalArrInit(ast::DimList * init_list){
+    global_array_init = init_list;
+}
+
+ast::DimList * Variable::getGlobalArrInit() const{
+    return global_array_init;
 }
