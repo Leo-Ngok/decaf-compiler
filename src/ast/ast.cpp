@@ -19,6 +19,8 @@ using namespace mind::ast;
 const char *ASTNode::node_name[] = {"add",
                                     "and",
                                     "assign",
+                                    "arrayref",
+                                    "arraydefn",
                                     "bconst",
                                     "bitnot",
 

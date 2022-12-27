@@ -33,6 +33,8 @@ class ASTNode {
         ADD_EXPR,
         AND_EXPR,
         ASSIGN_EXPR,
+        ARRAY_REF,
+        ARRAY_TYPE,
         BOOL_CONST,
         BIT_NOT_EXPR,
 
@@ -262,6 +264,18 @@ class BoolType : public Type {
     virtual void dumpTo(std::ostream &);
 };
 
+class ArrayType : public Type {
+  public:
+    ArrayType(Type*, DimList*, Location *l);
+    
+    virtual void accept(Visitor *);
+    virtual void dumpTo(std::ostream &);
+    
+    DimList* dimList;
+    Type* base_type;
+    symb::Variable *ATTR(sym); // for semantic analysis
+};
+
 /* Node representing an assignment statement.
  *
  * SERIALIZED FORM:
@@ -413,6 +427,20 @@ class PointerRef : public Lvalue {
     Expr *pointer;
 
     symb::Variable *ATTR(sym); // for tac generation
+};
+
+class ArrayRef : public Lvalue {
+  public:
+    ArrayRef(std::string var_name, ExprList* , Location *l);
+
+    virtual void accept(Visitor *);
+    virtual void dumpTo(std::ostream &);
+
+  public:
+    Expr *owner; // only to pass compilation, not used
+    std::string var;
+    ExprList* ranklist;
+    symb::Variable *ATTR(sym); 
 };
 
 /* Node representing an expression of lvalue.

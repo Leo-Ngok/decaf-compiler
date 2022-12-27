@@ -63,6 +63,8 @@ class ASTNode;
 
 class AddExpr;
 class AndExpr;
+class ArrayType;
+class ArrayRef;
 class AssignExpr;
 class BoolConst;
 class BoolType;

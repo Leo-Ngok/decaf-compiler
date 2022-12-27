@@ -618,6 +618,53 @@ Tac* Tac::SaveGSym(std::string dest_sym_name, Temp src) {
     return t;
 }
 
+Tac * Tac::LoadGAddr(Temp dest, std::string src_sym_name) {
+    Tac *t = allocateNewTac(Tac::FETCHGLOBAL);
+    t->op1.name = src_sym_name;
+    t->op0.var = dest;
+    t->mark = -1;
+    return t;
+}
+
+Tac* Tac::SaveGAddr(std::string dest_sym_name, Temp src) {
+    Tac *t = allocateNewTac(Tac::SAVEGLOBAL);
+    t->op0.name = dest_sym_name;
+    t->op1.var = src;
+    t->mark = -1;
+    return t;
+}
+
+Tac *Tac::Alloc(Temp ptr_dest, int size) {
+    Tac *t = allocateNewTac(Tac::ALLOC);
+    t->op0.var = ptr_dest;
+    t->op1.size = size;
+    return t;
+}
+Tac *Tac::Dealloc(int size) {
+    Tac *t = allocateNewTac(Tac::DEALLOC);
+    t->op0.size = size;
+    return t;
+}
+Tac *Tac::LoadValAt(Temp dest, Temp ptr_src) {
+    Tac *t = allocateNewTac(Tac::LOADMEM);
+    t->op0.var = dest;
+    t->op1.var = ptr_src;
+    return t;
+}
+Tac *Tac::SaveValAt(Temp ptr_dest, Temp src) {
+    Tac *t = allocateNewTac(Tac::SAVEMEM);
+    t->op0.var = ptr_dest;
+    t->op1.var = src;
+    return t;
+}
+Tac *Tac::Ptr_Add(Temp ptr_dest, Temp ptr_src, Temp op) {
+    Tac *t = allocateNewTac(Tac::PTRADD);
+    t->op0.var = ptr_dest;
+    t->op1.var = ptr_src;
+    t->op2.var = op;
+    return t;
+}
+
 /* Outputs a temporary variable.
  *
  * PARAMETERS:
@@ -817,6 +864,21 @@ void Tac::dump(std::ostream &os) {
     case FETCHGLOBAL:
         os << "    load_global_symbol " << op0.var << ", " << op1.name;
         break;
+    case ALLOC:
+        os << "    allocate " << op0.var << ", " << op1.size;
+        break;
+    case DEALLOC:
+        os << "    deallocate " << op0.size;
+        break;
+    case PTRADD:
+        os << " (ptr) " << op0.var << " <- (ptr) " << op1.var << " + (offset) " << op2.var;
+        break;
+    case LOADMEM:
+        os << "    " << op0.var << " <- *(" << op1.var <<")";
+        break;
+    case SAVEMEM:
+        os << "    *(" << op0.var << ") <- " << op1.var;
+        break;  
     default:
         mind_assert(false); // unreachable
         break;

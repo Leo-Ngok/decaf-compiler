@@ -40,6 +40,7 @@ class SemPass1 : public ast::Visitor {
     virtual void visit(ast::VarDecl *);
     // visiting types
     virtual void visit(ast::IntType *);
+    virtual void visit(ast::ArrayType *);
 };
 
 /* Visiting an ast::Program node.
@@ -240,6 +241,19 @@ void SemPass1::visit(ast::VarDecl *vdecl) {
  *   itype - the ast::IntType node to visit
  */
 void SemPass1::visit(ast::IntType *itype) { itype->ATTR(type) = BaseType::Int; }
+
+
+void SemPass1::visit(ast::ArrayType *atype) {
+    atype->base_type->accept(this);
+    type::Type* res_type = atype->base_type->ATTR(type);
+    
+    for(auto it = atype->dimList->rbegin(); 
+    it != atype->dimList->rend(); ++it) {
+        mind_assert(*it > 0);
+        res_type = new type::ArrayType(res_type, *it);
+    }
+    atype->ATTR(type) = res_type;
+}
 
 /* Builds the symbol tables for the Mind compiler.
  *

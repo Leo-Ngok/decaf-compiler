@@ -50,6 +50,7 @@ class Translation : public ast::Visitor {
     virtual void visit(ast::IfExpr *);
     virtual void visit(ast::VarRef *);
     virtual void visit(ast::VarDecl *);
+    virtual void visit(ast::ArrayRef *);
     virtual void visit(ast::WhileStmt *);
     virtual void visit(ast::BreakStmt *);
     virtual void visit(ast::ContStmt *);

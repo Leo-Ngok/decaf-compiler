@@ -77,6 +77,13 @@ class TransHelper {
     void genGlobl(symb::Variable*);
     Temp genLoadGSym(symb::Variable*, ...);
     void genSaveGSym(symb::Variable*, Temp, ...);
+    Temp genLoadGAddr(symb::Variable*);
+    void genSaveGAddr(symb::Variable*, Temp);
+    // Arrays
+    void genAlloc(Temp ptr_dest, int);
+    Temp genPtrAdd(Temp ptr_src, Temp offset);
+    Temp genLoadMem(Temp ptr_src);
+    void genSaveMem(Temp ptr_dest, Temp src);
     // gets the entire Piece list
     Piece *getPiece();
 

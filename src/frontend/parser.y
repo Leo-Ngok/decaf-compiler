@@ -26,7 +26,7 @@
 #include "ast/ast.hpp"
 #include "location.hpp"
 #include "parser.hpp"
-
+#include <iostream>
 using namespace mind;
 
 void yyerror (char const *);
@@ -92,7 +92,8 @@ void scan_end();
 %token<int> ICONST "iconst"
 %nterm<mind::ast::StmtList*> StmtList
 %nterm<mind::ast::VarList* > FormalList FormalListPrefix
-%nterm<mind::ast::ExprList* > ExprList ExprListPrefix
+%nterm<mind::ast::ExprList* > ExprList ExprListPrefix RankList
+%nterm<mind::ast::DimList* > IndexList
 %nterm<mind::ast::Program* > Program FoDList
 %nterm<mind::ast::FuncDefn* > FuncDefn
 %nterm<mind::ast::Type*> Type
@@ -147,6 +148,7 @@ FuncDefn : Type IDENTIFIER LPAREN FormalList RPAREN LBRACE StmtList RBRACE {
           Type IDENTIFIER LPAREN FormalList RPAREN SEMICOLON{
               $$ = new ast::FuncDefn($2,$1,$4,new ast::EmptyStmt(POS(@6)),POS(@1));
           }
+          ;
 FormalList :  /* EMPTY */
             {$$ = new ast::VarList();} 
             /*| Type IDENTIFIER 
@@ -159,6 +161,7 @@ FormalList :  /* EMPTY */
                 $1->append(new ast::VarDecl($3, $2, POS(@3))); 
                 $$ = $1;
             }
+            ;
 FormalListPrefix: FormalListPrefix Type IDENTIFIER COMMA
             {
                 $1->append(new ast::VarDecl($3, $2, POS(@3)));
@@ -168,6 +171,7 @@ FormalListPrefix: FormalListPrefix Type IDENTIFIER COMMA
             {
                 $$ = new ast::VarList();
             }
+            ;
 Type        : INT
                 { $$ = new ast::IntType(POS(@1)); }
 StmtList    : /* empty */
@@ -238,6 +242,7 @@ DoWhileStmt: DO Stmt WHILE LPAREN Expr RPAREN SEMICOLON
                     dowstmts->append(resultant_while);
                     $$ = new ast::CompStmt(dowstmts, POS(@1));
                 }
+            ;
 IfStmt      : IF LPAREN Expr RPAREN Stmt
                 { $$ = new ast::IfStmt($3, $5, new ast::EmptyStmt(POS(@5)), POS(@1)); }
             | IF LPAREN Expr RPAREN Stmt ELSE Stmt
@@ -309,13 +314,28 @@ InitStmt   : NExpr SEMICOLON
                 }
             | VarDecl 
                 { $$ = $1; }
-VarDecl     : Type IDENTIFIER SEMICOLON
-                { $$ = new ast::VarDecl($2, $1, POS(@1));}
+            ;
+VarDecl     : Type IDENTIFIER IndexList SEMICOLON
+                { 
+                    if($3->empty())
+                        $$ = new ast::VarDecl($2, $1, POS(@1));
+                    else {
+                        ast::Type *resType = new ast::ArrayType($1, $3, POS(@3));
+                        $$ = new ast::VarDecl($2, resType, POS(@1));
+                    }
+                    
+                }
             | Type IDENTIFIER ASSIGN Expr SEMICOLON
                 { $$ = new ast::VarDecl($2, $1, $4, POS(@1));}
             ;
-Lvalue      : IDENTIFIER
-                { $$ = new ast::VarRef($1, POS(@1)); }
+Lvalue      : IDENTIFIER RankList
+                { 
+                    if($2->empty())
+                        $$ = new ast::VarRef($1, POS(@1)); 
+                    else   
+                        $$ = new ast::ArrayRef($1, $2, POS(@1));
+                }
+            
             ;
 LvalueExpr  : Lvalue
                 { $$ = new ast::LvalueExpr($1, POS(@1)); }
@@ -339,6 +359,19 @@ ExprListPrefix: ExprListPrefix Expr COMMA
             {
                 $$ = new ast::ExprList();
             }
+            ;
+IndexList   : IndexList LBRACK ICONST RBRACK
+                { $1->append($3); $$ = $1; }
+            | 
+                { 
+                    $$ = new ast::DimList();
+                }
+            ;
+RankList    : RankList LBRACK Expr RBRACK
+                { $1->append($3); $$ = $1; }
+            | 
+                { $$ = new ast::ExprList(); }
+            ;
 %%
 
 /* SECTION IV: customized section */

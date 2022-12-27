@@ -94,7 +94,7 @@ class ArrayType : public Type {
     // the element type
     Type *element_type;
     int length;
-
+    size_t level;
   public:
     // Constructor
     ArrayType(Type *, int length);
@@ -102,6 +102,7 @@ class ArrayType : public Type {
     Type *getElementType(void);
     // Gets the array length
     int getLength(void);
+    size_t getLevel(void) const;
     // Tests whether it is ArrayType
     virtual bool isArrayType(void);
     // Get the size of this type

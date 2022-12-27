@@ -265,6 +265,7 @@ void RiscvDesc::emitTac(Tac *t) {
         emitUnaryTac(RiscvInstr::BNOT, t);
         break;
     case Tac::ADD:
+    case Tac::PTRADD:
         emitBinaryTac(RiscvInstr::ADD, t);
         break;
     case Tac::SUB:
@@ -325,6 +326,27 @@ void RiscvDesc::emitTac(Tac *t) {
         emitRevertReg(t);
         setReturnValue(t);
         break;
+    case Tac::LOADMEM:
+        emitUnaryTac(RiscvInstr::LW, t);
+        break;
+    case Tac::SAVEMEM: {
+        //Temp tmpvar = t->op0.var;
+        //t->op0.var = t->op1.var;
+        //t->op1.var = tmpvar;
+        //emitUnaryTac(RiscvInstr::SW, t);
+        int r1 = getRegForRead(t->op1.var,0,t->LiveOut);
+        int r0 = getRegForRead(t->op0.var, r1,t->LiveOut);
+        addInstr(RiscvInstr::SW, _reg[r1], _reg[r0],NULL, 0, EMPTY_STR, NULL);
+        break;
+    }
+    case Tac::ALLOC: {
+        if (!t->LiveOut->contains(t->op0.var))
+        break;
+        int r0 = getRegForWrite(t->op0.var, 0, 0, t->LiveOut);
+        addInstr(RiscvInstr::ADDI, _reg[RiscvReg::SP], _reg[RiscvReg::SP], NULL,  -t->op1.size,EMPTY_STR,NULL );
+        addInstr(RiscvInstr::MOVE, _reg[r0], _reg[RiscvReg::SP],NULL, 0, EMPTY_STR, NULL);
+        break;
+    }
     default:
         mind_assert(false); // should not appear inside a basic block
     }
@@ -335,7 +357,10 @@ void RiscvDesc::emitLoadSym(Tac *t){
         return;
     int r0 = getRegForWrite(t->op0.var, 0, 0, t->LiveOut);
     addInstr(RiscvInstr::LA, _reg[r0], NULL, NULL, 0, t->op1.name, NULL);
-    addInstr(RiscvInstr::LW, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);
+    if(t->mark != -1) {
+        addInstr(RiscvInstr::LW, _reg[r0], _reg[r0], NULL, 0, EMPTY_STR, NULL);
+    }
+    
 }
 void RiscvDesc::emitSaveSym(Tac *t) {
     int r1 = getRegForRead(t->op1.var, 0, t->LiveOut);

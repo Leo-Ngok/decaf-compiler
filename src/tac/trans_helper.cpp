@@ -516,6 +516,13 @@ void TransHelper::genGlobl(symb::Variable *v) {
         ptail->as.globl->payload
         ->payload_type = PayLoad::DATA;
         
+    } else {
+        ptail->as.globl->payload = new PayLoad(); 
+        int sz = v->getType()->getSize();
+        ptail->as.globl->payload
+        ->size = sz;
+        ptail->as.globl->payload
+        ->payload_type = PayLoad::PADDING;
     }
 }
 
@@ -529,6 +536,34 @@ Temp TransHelper::genLoadGSym(symb::Variable *v, ...) {
 void TransHelper::genSaveGSym(symb::Variable *v, Temp src, ...) {
     // TODO
     chainUp(Tac::SaveGSym(v->getName(), src));
+}
+
+Temp TransHelper::genLoadGAddr(symb::Variable *v) {
+    // TODO
+    Temp dest = getNewTempI4();
+    chainUp(Tac::LoadGAddr(dest, v->getName()));
+    return dest;
+}
+void TransHelper::genSaveGAddr(symb::Variable *v, Temp src) {
+    // TODO
+    chainUp(Tac::SaveGAddr(v->getName(), src));
+}
+
+void TransHelper::genAlloc(Temp ptr_dest, int size) {
+    chainUp(Tac::Alloc(ptr_dest, size));
+}
+Temp TransHelper::genPtrAdd(Temp ptr_src, Temp offset) {
+    Temp ptr_dest = getNewTempI4();
+    chainUp(Tac::Ptr_Add(ptr_dest, ptr_src, offset));
+    return ptr_dest;
+}
+Temp TransHelper::genLoadMem(Temp ptr_src) {
+    Temp dest = getNewTempI4();
+    chainUp(Tac::LoadValAt(dest, ptr_src));
+    return dest;
+}
+void TransHelper::genSaveMem(Temp ptr_dest, Temp src) {
+    chainUp(Tac::SaveValAt(ptr_dest, src));
 }
 /* Retrieves the entire Piece list.
  *

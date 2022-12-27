@@ -129,6 +129,36 @@ void Translation::visit(ast::AssignExpr *s) {
         
         break;
     }
+    case s->left->ARRAY_ELE: {
+
+        ast::ArrayRef * lvar = (ast::ArrayRef*) s->left;
+        for(auto it = lvar->ranklist->begin(); it != lvar->ranklist->end(); ++it) {
+            (*it)->accept(this);
+        }
+        Type* t = ((ArrayType*)lvar->ATTR(sym)->getType());//->getElementType();
+        auto it = lvar->ranklist->begin();
+        Temp t1 = tr->genLoadImm4(0);
+        Temp t2, t3;
+        while(it != lvar->ranklist->end()){
+            if(t->isArrayType()) {
+                t = ((ArrayType*)t)->getElementType();
+            } else {
+                break;
+            }
+            t2 = tr->genLoadImm4(t->getSize());
+            t3 = tr->genMul((*it)->ATTR(val), t2);
+            t1 = tr->genAdd(t1, t3);
+            it++;
+        }
+        Temp base;
+        if(lvar->ATTR(sym)->isGlobalVar()) {
+            base = tr->genLoadGAddr(lvar->ATTR(sym));
+        } else {
+            base = lvar->ATTR(sym)->getTemp();
+        }
+        Temp location = tr->genPtrAdd(base, t1);
+        tr->genSaveMem(location, s->e->ATTR(val));
+    }
     default: break;
     }
     
@@ -379,7 +409,36 @@ void Translation::visit(ast::LvalueExpr *e) {
         } else
         e->ATTR(val) = ( (ast::VarRef *) e->lvalue)->ATTR(sym)->getTemp();
         break;
-    
+    case e->lvalue->ARRAY_ELE: {
+        ast::ArrayRef * lvar = (ast::ArrayRef*) e->lvalue;
+        for(auto it = lvar->ranklist->begin(); it != lvar->ranklist->end(); ++it) {
+            (*it)->accept(this);
+        }
+        Type* t = ((ArrayType*)lvar->ATTR(sym)->getType());//->getElementType();
+        auto it = lvar->ranklist->begin();
+        Temp t1 = tr->genLoadImm4(0);
+        Temp t2, t3;
+        while(it != lvar->ranklist->end()){
+            if(t->isArrayType()) {
+                t = ((ArrayType*)t)->getElementType();
+            } else {
+                break;
+            }
+            t2 = tr->genLoadImm4(t->getSize());
+            t3 = tr->genMul((*it)->ATTR(val), t2);
+            t1 = tr->genAdd(t1, t3);
+            it++;
+        }
+        Temp base;
+        if(lvar->ATTR(sym)->isGlobalVar()) {
+            base = tr->genLoadGAddr(lvar->ATTR(sym));
+        } else {
+            base = lvar->ATTR(sym)->getTemp();
+        }
+        Temp location = tr->genPtrAdd(base, t1);
+        e->ATTR(val) = tr->genLoadMem(location);
+        break;
+    }
     default:
         break;
     }
@@ -413,15 +472,30 @@ void Translation::visit(ast::VarDecl *decl) {
     }
     Temp var = tr->getNewTempI4();
     decl->ATTR(sym)->attachTemp(var);
-    if(decl->init != NULL) {
+    if(decl->init != NULL) { // only possible for base type declaration
         decl->init->accept(this);
         tr->genAssign(var, decl->init->ATTR(val));
-    } else {
+    } else if(decl->ATTR(sym)->getType()->isBaseType()) {
         Temp default_init = tr->genLoadImm4(0);
         tr->genAssign(var, default_init);
+    } else if(decl->ATTR(sym)->getType()->isArrayType()) {
+        ArrayType* at = (ArrayType*) decl->ATTR(sym)->getType();
+        tr->genAlloc(var, at->getSize());
     }
 
     // TODO
+}
+
+
+void Translation::visit(ast::ArrayRef *aref){
+    switch (aref->ATTR(lv_kind)) {
+    case ast::Lvalue::ARRAY_ELE:
+        // nothing to do
+        break;
+
+    default:break;
+       // mind_assert(false); // impossible
+    }
 }
 
 /* Translating an ast::IfExpr node.

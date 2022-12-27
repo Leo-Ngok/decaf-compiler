@@ -20,6 +20,12 @@ ArrayType::ArrayType(Type *bt, int len) {
 
     element_type = bt;
     length = len;
+    if(bt->isBaseType())
+        level = 1;
+    else if(bt->isArrayType())
+        level = ((ArrayType*)bt)->getLevel() + 1;
+    else
+        mind_assert(false);
 }
 
 /* Gets the element type.
@@ -41,6 +47,8 @@ bool ArrayType::isArrayType(void) { return true; }
 /* Get the size of this type
  */
 int ArrayType::getSize() { return element_type->getSize() * length; }
+
+size_t ArrayType::getLevel() const { return level; }
 
 /* Tests whether this type is compatible with the given type.
  *

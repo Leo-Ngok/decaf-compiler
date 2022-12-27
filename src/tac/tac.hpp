@@ -68,7 +68,7 @@ struct PayLoad {
     typedef enum {
         DATA, PADDING
     } PLType;
-    size_t size;
+    int size;
     PLType payload_type;
     PayLoad * next;
 };
@@ -119,6 +119,11 @@ struct Tac {
         FETCHARG,
         SAVEGLOBAL,
         FETCHGLOBAL,
+        ALLOC,
+        DEALLOC,
+        LOADMEM,
+        SAVEMEM,
+        PTRADD,
     } Kind;
 
     // Operand type
@@ -175,6 +180,13 @@ struct Tac {
     static Tac *FetchArg(Temp dest, int order);
     static Tac *LoadGSym(Temp dest, std::string src_sym_name);
     static Tac *SaveGSym(std::string dest_sym_name, Temp src);
+    static Tac *LoadGAddr(Temp dest, std::string src_sym_name);
+    static Tac *SaveGAddr(std::string dest_sym_name, Temp src);
+    static Tac *Alloc(Temp ptr_dest, int size);
+    static Tac *Dealloc(int size);
+    static Tac *LoadValAt(Temp dest, Temp ptr_src);
+    static Tac *SaveValAt(Temp ptr_dest, Temp src);
+    static Tac *Ptr_Add(Temp ptr_dest, Temp ptr_src, Temp op);
     // dumps a single tac node to some output stream
     void dump(std::ostream &);
 };

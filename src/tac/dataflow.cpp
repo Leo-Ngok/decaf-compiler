@@ -46,10 +46,15 @@ void BasicBlock::computeDefAndLiveUse(void) {
         case Tac::NEG:
         case Tac::LNOT:
         case Tac::BNOT:
+        case Tac::LOADMEM:
             updateLU(t->op1.var);
             updateDEF(t->op0.var);
             break;
-
+    
+        case Tac::SAVEMEM:
+            updateLU(t->op1.var);
+            updateLU(t->op0.var);
+            break;
         case Tac::ADD:
         case Tac::SUB:
         case Tac::MUL:
@@ -63,6 +68,7 @@ void BasicBlock::computeDefAndLiveUse(void) {
         case Tac::GEQ:
         case Tac::LAND:
         case Tac::LOR:
+        case Tac::PTRADD:
             updateLU(t->op1.var);
             updateLU(t->op2.var);
             updateDEF(t->op0.var);
@@ -86,6 +92,7 @@ void BasicBlock::computeDefAndLiveUse(void) {
             updateDEF(t->op0.var); // T := foo(...) is definition
             break;
         case Tac::FETCHGLOBAL:
+        case Tac::ALLOC:
             updateDEF(t->op0.var);
             break;
         case Tac::SAVEGLOBAL:
@@ -207,11 +214,16 @@ void BasicBlock::analyzeLiveness(void) {
         case Tac::NEG:
         case Tac::LNOT:
         case Tac::BNOT:
+        case Tac::LOADMEM:
             if (NULL != t_next->op0.var)
                 t->LiveOut->remove(t_next->op0.var);
             t->LiveOut->add(t_next->op1.var);
             break;
-
+        
+        case Tac::SAVEMEM:
+            t->LiveOut->add(t_next->op0.var);
+            t->LiveOut->add(t_next->op1.var);
+            break;
         case Tac::ADD:
         case Tac::SUB:
         case Tac::MUL:
@@ -225,6 +237,7 @@ void BasicBlock::analyzeLiveness(void) {
         case Tac::GEQ:
         case Tac::LAND:
         case Tac::LOR:
+        case Tac::PTRADD:
             if (NULL != t_next->op0.var)
                 t->LiveOut->remove(t_next->op0.var);
             t->LiveOut->add(t_next->op1.var);
@@ -246,6 +259,9 @@ void BasicBlock::analyzeLiveness(void) {
             break;
         case Tac::SAVEGLOBAL:
             t->LiveOut->add(t_next->op1.var);
+            break;
+        case Tac::ALLOC:
+            t->LiveOut->add(t_next->op0.var);
             break;
         default:
             mind_assert(false); // MARK, MEMO, JUMP, JZERO and RETURN will not

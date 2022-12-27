@@ -52,6 +52,7 @@ class SemPass2 : public ast::Visitor {
     virtual void visit(ast::VarRef *);
     virtual void visit(ast::IfExpr *);
     virtual void visit(ast::FuncRef *);
+    virtual void visit(ast::ArrayRef *);
     // Visiting statements
     virtual void visit(ast::VarDecl *);
     virtual void visit(ast::CompStmt *);
@@ -357,7 +358,11 @@ void SemPass2::visit(ast::VarRef *ref) {
         issue(ref->getLocation(), new NotVariableError(v));
         goto issue_error_type;
 
-    } else {
+    } else if(!v->getType()->isBaseType()) {
+        issue(ref->getLocation(), new NotVariableError(v));
+        goto issue_error_type;
+    } 
+    else {
         ref->ATTR(type) = v->getType();
         ref->ATTR(sym) = (Variable *)v;
 
@@ -372,6 +377,52 @@ void SemPass2::visit(ast::VarRef *ref) {
 issue_error_type:
     ref->ATTR(type) = BaseType::Error;
     ref->ATTR(sym) = NULL;
+    return;
+}
+
+void SemPass2::visit(ast::ArrayRef *aref){
+    Symbol *v = scopes->lookup(aref->var, aref->getLocation());
+    if (NULL == v) {
+        issue(aref->getLocation(), new SymbolNotFoundError(aref->var));
+        goto issue_error_type;
+
+    } else if (!v->isVariable()) {
+        issue(aref->getLocation(), new NotVariableError(v));
+        goto issue_error_type;
+
+    } else if(!v->getType()->isArrayType()) {
+        issue(aref->getLocation(), new NotArrayError());
+        goto issue_error_type;
+    } else {
+        
+        aref->ATTR(sym) = (Variable *)v;
+        ArrayType* atype = (ArrayType*)v->getType();
+        if(atype->getLevel() != aref->ranklist->length()) {
+            issue(aref->getLocation(), new NotArrayError());
+        }
+        else {
+            Type* curr_type = atype;
+            for(auto it = aref->ranklist->begin();
+            it != aref->ranklist->end(); ++it) {
+                (*it)->accept(this);
+                if(!(*it)->ATTR(type)->compatible(BaseType::Int)) {
+                    issue((*it)->getLocation(), new UnexpectedTypeError((*it)->ATTR(type), BaseType::Int));
+                }
+                curr_type = ((ArrayType*)curr_type)->getElementType();
+            }
+            aref->ATTR(type) = curr_type;
+        }
+        //if (((Variable *)v)->isLocalVar()) {
+            aref->ATTR(lv_kind) = ast::Lvalue::ARRAY_ELE;
+        //}
+    }
+
+    return;
+
+    // sometimes "GOTO" will make things simpler. this is one of such cases:
+issue_error_type:
+    aref->ATTR(type) = BaseType::Error;
+    aref->ATTR(sym) = NULL;
     return;
 }
 
